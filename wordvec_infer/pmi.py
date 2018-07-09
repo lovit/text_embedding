@@ -2,6 +2,41 @@ import numpy as np
 from scipy.sparse import diags
 from scipy.sparse import dok_matrix
 
+def _as_diag(px, alpha):
+    px_diag = diags(px.tolist()[0])
+    px_diag.data[0] = np.asarray([0 if v == 0 else 1/(v + alpha) for v in px_diag.data[0]])
+    return px_diag
+
+def _as_dok_matrix(exp_pmi, min_pmi, verbose):
+    # PPMI using threshold
+    min_exp_pmi = 1 if min_pmi == 0 else np.exp(min_pmi)
+
+    # because exp_pmi is sparse matrix and type of exp_pmi.data is numpy.ndarray
+    indices = np.where(exp_pmi.data > min_exp_pmi)[0]
+
+    pmi_dok = dok_matrix(exp_pmi.shape)
+
+    # prepare data (rows, cols, data)
+    rows, cols = exp_pmi.nonzero()
+    data = exp_pmi.data
+
+    # enumerate function for printing status
+    for _n_idx, idx in enumerate(indices):
+
+        # print current status
+        if verbose and _n_idx % 10000 == 0:
+            print('\rcomputing pmi {:.3} %  mem={} Gb    '.format(
+                100 * _n_idx / indices.shape[0], '%.3f' % get_process_memory())
+                  , flush=True, end='')
+
+        # apply logarithm
+        pmi_dok[rows[idx], cols[idx]] = np.log(data[idx])
+
+    if verbose:
+        print('\rcomputing pmi was done{}'.format(' '*30), flush=True)
+
+    return pmi_dok
+
 def train_pmi(x, min_pmi=0, alpha=0.0001, verbose=False):
     """
     Attributes
@@ -34,40 +69,11 @@ def train_pmi(x, min_pmi=0, alpha=0.0001, verbose=False):
     
     # transform px and py to diagonal matrix
     # using scipy.sparse.diags
-    px_diag = diags(px.tolist()[0])
-    py_diag = diags((py).tolist()[0])
-    
     # pmi_alpha (x,y) = p(x,y) / ( p(x) x (p(y) + alpha) )
-    px_diag.data[0] = np.asarray([0 if v == 0 else 1/v for v in px_diag.data[0]])
-    py_diag.data[0] = np.asarray([0 if v == 0 else 1/(v + alpha) for v in py_diag.data[0]])
-    
+    px_diag = _as_diag(px, 0)
+    py_diag = _as_diag(py, alpha)
     exp_pmi = px_diag.dot(pxy).dot(py_diag)
-    
-    # PPMI using threshold
-    min_exp_pmi = 1 if min_pmi == 0 else np.exp(min_pmi)
 
-    # because exp_pmi is sparse matrix and type of exp_pmi.data is numpy.ndarray
-    indices = np.where(exp_pmi.data > min_exp_pmi)[0]
-
-    pmi_dok = dok_matrix(exp_pmi.shape)
-
-    # prepare data (rows, cols, data)
-    rows, cols = exp_pmi.nonzero()
-    data = exp_pmi.data
-
-    # enumerate function for printing status
-    for _n_idx, idx in enumerate(indices):
-
-        # print current status        
-        if verbose and _n_idx % 10000 == 0:
-            print('\rcomputing pmi {:.3} %  mem={} Gb    '.format(
-                100 * _n_idx / indices.shape[0], '%.3f' % get_process_memory())
-                  , flush=True, end='')
-
-        # apply logarithm
-        pmi_dok[rows[idx], cols[idx]] = np.log(data[idx])
-
-    if verbose:
-        print('\rcomputing pmi was done{}'.format(' '*30), flush=True)
+    pmi_dok = _as_dok_matrix(exp_pmi, min_pmi, verbose)
 
     return pmi_dok, px
