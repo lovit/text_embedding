@@ -8,6 +8,18 @@ def _as_diag(px, alpha):
     px_diag.data[0] = np.asarray([0 if v == 0 else 1/(v + alpha) for v in px_diag.data[0]])
     return px_diag
 
+def _as_csr_matrix(exp_pmi, min_pmi, verbose):
+    # PPMI using threshold
+    min_exp_pmi = 1 if min_pmi == 0 else np.exp(min_pmi)
+
+    # because exp_pmi is sparse matrix and type of exp_pmi.data is numpy.ndarray
+    indices = np.where(exp_pmi.data > min_exp_pmi)[0]
+
+    # apply logarithm
+    exp_pmi.data = np.log(exp_pmi.data)
+
+    return exp_pmi
+
 def _as_dok_matrix(exp_pmi, min_pmi, verbose):
     # PPMI using threshold
     min_exp_pmi = 1 if min_pmi == 0 else np.exp(min_pmi)
@@ -38,7 +50,7 @@ def _as_dok_matrix(exp_pmi, min_pmi, verbose):
 
     return pmi_dok
 
-def train_pmi(x, min_pmi=0, alpha=0.0001, verbose=False):
+def train_pmi(x, min_pmi=0, alpha=0.0001, as_csr=True, verbose=False):
     """
     Attributes
     ----------
@@ -51,13 +63,15 @@ def train_pmi(x, min_pmi=0, alpha=0.0001, verbose=False):
     alpha : float
         Smoothing factor. pmi(x,y; alpha) = p_xy /(p_x * (p_y + alpha))
         Default is 0.0001
+    as_csr : Boolean
+        Return type is csr_matrix if as_csr is True else dok_matrix
     verbose : Boolean
         Print progress if verbose is true.
         Default is False
 
     It returns
     ----------
-    pmi_dok : scipy.sparse.dok_matrix
+    pmi : scipy.sparse.dok_matrix or scipy.sparse.csr_matrix
         (word, contexts) pmi value sparse matrix
     px : numpy.ndarray
         Probability of words
@@ -75,9 +89,12 @@ def train_pmi(x, min_pmi=0, alpha=0.0001, verbose=False):
     py_diag = _as_diag(py, alpha)
     exp_pmi = px_diag.dot(pxy).dot(py_diag)
 
-    pmi_dok = _as_dok_matrix(exp_pmi, min_pmi, verbose)
+    if as_csr:
+        pmi = _as_csr_matrix(exp_pmi, min_pmi, verbose)
+    else:
+        pmi = _as_dok_matrix(exp_pmi, min_pmi, verbose)
 
-    return pmi_dok, px
+    return pmi, px
 
 def infer_pmi(x_, py, min_pmi=0, alpha=0.0001, verbose=False):
     """
