@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.sparse import diags
 from scipy.sparse import dok_matrix
+from .utils import get_process_memory
 
 def _as_diag(px, alpha):
     px_diag = diags(px.tolist()[0])
