@@ -42,9 +42,9 @@ class Word2Vec:
 
         # trained attributes
         self.wv = None # word vector
-        self._vocab2int = None
-        self._int2vocab = None
-        self._transformer = None
+        self._vocab2idx = None
+        self._idx2vocab = None
+        self._py = None
 
         if sentences:
             self.train(sentences)
@@ -54,9 +54,25 @@ class Word2Vec:
             return self.wv is not None
 
         def train(self, sentences):
-            raise NotImplemented
+
+            x, self._idx2vocab = sent_to_word_contexts_matrix(
+                sentences, self._window, self._min_count,
+                verbose=self.verbose)
+
+            pmi, self._py = train_pmi(x,
+                as_csr=True,verbose=self.verbose)
+
+            svd = TruncatedSVD(n_components=self._size)
+            self.wv = svd.fit_transform(pmi)
+            self._components = svd.components_
+            self._explained_variance = svd.explained_variance_
+            self._explained_variance_ratio = svd.explained_variance_ratio_
 
         def infer(self, sentences, words):
+
+            def dim_reduce(pmi):
+                return safe_sparse_dot(pmi, _components.T)
+
             raise NotImplemented
 
         def save(self, path):
