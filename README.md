@@ -105,8 +105,4 @@ Word2Vec.infer 함수는 words 의 word vector 와 index 를 return 합니다. a
 - [2] Levy, O., & Goldberg, Y. (2014). [Neural word embedding as implicit matrix factorization][wordpmi]. In Advances in neural information processing systems (pp. 2177-2185).
 
 [word2vec]: http://papers.nips.cc/paper/5021-distributed-representations-of-words-andphrases
-<<<<<<< HEAD
 [wordpmi]: http://papers.nips.cc/paper/5477-neural-word-embedding-as-implicit-matrix-factorization
-=======
-[wordpmi]: http://papers.nips.cc/paper/5477-neural-word-embedding-as-implicit-matrix-factorization
->>>>>>> f0794f089a3c99d4c55d3c6f8c89e6f8a31d5c47
