@@ -4,7 +4,7 @@ from scipy.sparse import csr_matrix
 
 from .utils import get_process_memory
 
-def sent_to_word_contexts_matrix(sents, windows=3, min_tf=10,
+def sents_to_word_contexts_matrix(sents, windows=3, min_tf=10,
         tokenizer=lambda x:x.split(), verbose=True):
 
     if verbose:
