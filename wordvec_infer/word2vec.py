@@ -90,7 +90,7 @@ class Word2Vec:
             alpha=self._alpha, as_csr=True, verbose=True)
 
         # apply trained SVD
-        y_ = safe_sparse_dot(pmi_, _components.T)
+        y_ = safe_sparse_dot(pmi_, self._components.T)
 
         return y_, idx2vocab_
 
