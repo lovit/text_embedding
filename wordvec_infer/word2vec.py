@@ -59,6 +59,13 @@ class Word2Vec:
         return self.wv is not None
 
     def train(self, sentences):
+        """
+        Attributes
+        ----------
+        sentences : list of list of str (like)
+            Iterable of iterables, optional
+            A sentence is represented with list of str.
+        """
 
         x, self._idx2vocab = sents_to_word_contexts_matrix(
             sentences, self._window, self._min_count,
@@ -76,7 +83,21 @@ class Word2Vec:
         self._explained_variance = svd.explained_variance_
         self._explained_variance_ratio = svd.explained_variance_ratio_
 
-    def infer(self, sentences, words, tokenizer=None):
+    def infer(self, sentences, words, append=True, tokenizer=None):
+        """
+        Attributes
+        ----------
+        sentences : list of list of str (like)
+            Iterable of iterables, optional
+            A sentence is represented with list of str.
+        words : list or set of str
+            Word set of that we want to infer vectors.
+        append : Boolean
+            If true, the inferring results are stored in Word2Vec model.
+        tokenizer : functional
+            Tokenizer functions. It assumes that the input form is str
+            and output form is list of str
+        """
 
         if tokenizer is None:
             tokenizer = self._tokenizer
