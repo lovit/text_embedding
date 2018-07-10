@@ -1,4 +1,5 @@
 from sklearn.decomposition import TruncatedSVD
+from sklearn.utils.extmath import safe_sparse_dot
 
 from .pmi import train_pmi
 from .utils import get_process_memory
