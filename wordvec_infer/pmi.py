@@ -50,7 +50,7 @@ def _as_dok_matrix(exp_pmi, min_pmi, verbose):
 
     return pmi_dok
 
-def train_pmi(x, min_pmi=0, alpha=0.0001, as_csr=True, verbose=False):
+def train_pmi(x, py=None, min_pmi=0, alpha=0.0001, as_csr=True, verbose=False):
     """
     Attributes
     ----------
@@ -79,7 +79,8 @@ def train_pmi(x, min_pmi=0, alpha=0.0001, as_csr=True, verbose=False):
 
     # convert x to probability matrix & marginal probability 
     px = (x.sum(axis=1) / x.sum()).reshape(-1)
-    py = (x.sum(axis=0) / x.sum()).reshape(-1)
+    if py is None:
+        py = (x.sum(axis=0) / x.sum()).reshape(-1)
     pxy = x / x.sum()
 
     # transform px and py to diagonal matrix
@@ -95,43 +96,3 @@ def train_pmi(x, min_pmi=0, alpha=0.0001, as_csr=True, verbose=False):
         pmi = _as_dok_matrix(exp_pmi, min_pmi, verbose)
 
     return pmi, px
-
-def infer_pmi(x_, py, min_pmi=0, alpha=0.0001, verbose=False):
-    """
-    Attributes
-    ----------
-    x_ : scipy.sparse.csr_matrix
-        (word, contexts) sparse matrix
-    py : numpy.ndarray
-        Probability of context words
-    min_pmi : float
-        Minimum value of pmi. all the values that smaller than min_pmi
-        are reset to zero.
-        Default is zero.
-    alpha : float
-        Smoothing factor. pmi(x,y; alpha) = p_xy /(p_x * (p_y + alpha))
-        Default is 0.0001
-    verbose : Boolean
-        Print progress if verbose is true.
-        Default is False
-
-    It returns
-    ----------
-    pmi_dok : scipy.sparse.dok_matrix
-        (word, contexts) pmi value sparse matrix
-    """
-
-    # convert x to probability matrix & marginal probability
-    px = (x_.sum(axis=1) / x_.sum()).reshape(-1)
-    pxy = x_ / x_.sum()
-
-    # transform px and py to diagonal matrix
-    # using scipy.sparse.diags
-    # pmi_alpha (x,y) = p(x,y) / ( p(x) x (p(y) + alpha) )
-    px_diag = _as_diag(px, 0)
-    py_diag = _as_diag(py, alpha)
-    exp_pmi = px_diag.dot(pxy).dot(py_diag)
-
-    pmi_dok = _as_dok_matrix(exp_pmi, min_pmi, verbose)
-
-    return pmi_dok
