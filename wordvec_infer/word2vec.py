@@ -1,5 +1,6 @@
 from sklearn.decomposition import TruncatedSVD
 from sklearn.utils.extmath import safe_sparse_dot
+import numpy as np
 
 from .pmi import train_pmi
 from .utils import get_process_memory
@@ -112,6 +113,13 @@ class Word2Vec:
 
         # apply trained SVD
         y_ = safe_sparse_dot(pmi_, self._components.T)
+
+        if append:
+            n_vocabs = len(self._idx2vocab)
+            self._idx2vocab += idx2vocab_
+            self._vocab2idx.update({vocab : idx + n_vocabs
+                for idx, vocab in enumerate(idx2vocab_)})
+            self.wv = np.vstack([self.wv, y_])
 
         return y_, idx2vocab_
 
