@@ -1,4 +1,5 @@
 from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics import pairwise_distances
 from sklearn.utils.extmath import safe_sparse_dot
 import numpy as np
 
@@ -51,6 +52,7 @@ class Word2Vec:
         self._vocab2idx = None
         self._idx2vocab = None
         self._py = None
+        self.n_vocabs = 0
 
         if sentences:
             self.train(sentences)
@@ -74,6 +76,7 @@ class Word2Vec:
 
         self._vocab2idx = {vocab:idx for idx, vocab
             in enumerate(self._idx2vocab)}
+        self.n_vocabs = len(self._idx2vocab)
 
         pmi, self._py = train_pmi(x, alpha=self._alpha,
             as_csr=True, verbose=self._verbose)
@@ -115,13 +118,68 @@ class Word2Vec:
         y_ = safe_sparse_dot(pmi_, self._components.T)
 
         if append:
-            n_vocabs = len(self._idx2vocab)
             self._idx2vocab += idx2vocab_
-            self._vocab2idx.update({vocab : idx + n_vocabs
+            self._vocab2idx.update({vocab : idx + self.n_vocabs
                 for idx, vocab in enumerate(idx2vocab_)})
             self.wv = np.vstack([self.wv, y_])
+            self.n_vocabs += len(idx2vocab_)
 
         return y_, idx2vocab_
+
+    def most_similar(self, word, topk=10):
+        """
+        Attributes
+        ----------
+        word : str
+            Query word
+        topk : int
+            Number of most similar words
+
+        It returns
+        ----------
+        similars : list of tuple
+            List of tuple of most similar words.
+            Each tuple consists with (word, cosine similarity)
+        """
+
+        query_idx = self._vocab2idx.get(word, -1)
+
+        if query_idx < 0:
+            return []
+
+        query_vector = self.wv[query_idx,:].reshape(1,-1)
+        return self.most_similar_from_vector(query_vector, topk, query_idx)
+
+    def most_similar_from_vector(self, vector, topk=10, query_idx=-1):
+        """
+        Attributes
+        ----------
+        vector : numpy.ndarray
+            A vector of query word. Its shape should be (1, self._size)
+        topk : int
+            Number of most similar words
+
+        It returns
+        ----------
+        similars : list of tuple
+            List of tuple of most similar words.
+            Each tuple consists with (word, cosine similarity)
+        """
+
+        assert vector.shape == (1, self._size)
+
+        dist = pairwise_distances(vector, self.wv, metric='cosine')[0]
+
+        similars = []
+        for similar_idx in dist.argsort():
+            if similar_idx == query_idx:
+                continue
+            if len(similars) >= topk:
+                break
+            similar_word = self._idx2vocab[similar_idx]
+            similars.append((similar_word, 1-dist[similar_idx]))
+
+        return similars
 
     def save(self, path):
         raise NotImplemented
