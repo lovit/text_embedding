@@ -54,7 +54,10 @@ def _print_status(message, i_sent, new_line=False):
         flush=True, end='\n' if new_line else ''
     )
 
-def _word_context(sents, windows, tokenizer, verbose, vocab2idx):
+def _word_context(sents, windows, tokenizer, verbose, vocab2idx, base_vocabs=None):
+
+    if not base_vocabs:
+        base_vocabs = {vocab for vocab in vocab2idx}
 
     # scanning (word, context) pairs
     word2contexts = defaultdict(lambda: defaultdict(int))
@@ -71,7 +74,7 @@ def _word_context(sents, windows, tokenizer, verbose, vocab2idx):
         n = len(words)
 
         for i, word in enumerate(words):
-            if not (word in vocab2idx):
+            if not (word in base_vocabs):
                 continue
 
             # left_contexts
