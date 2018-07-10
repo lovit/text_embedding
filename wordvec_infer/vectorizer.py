@@ -55,6 +55,14 @@ def _print_status(message, i_sent, new_line=False):
     )
 
 def _word_context(sents, windows, tokenizer, verbose, vocab2idx, base_vocabs=None):
+    """
+    Attributes
+    ----------
+    vocab2idx : dict {str:int}
+        Index of context words
+    base_vocabs : dict or set
+        Index of base words
+    """
 
     if not base_vocabs:
         base_vocabs = {vocab for vocab in vocab2idx}
