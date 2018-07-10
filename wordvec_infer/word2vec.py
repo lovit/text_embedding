@@ -6,8 +6,9 @@ from .vectorizer import sent_to_word_contexts_matrix
 
 class Word2Vec:
 
-    def __init__(self, sentences=None, size=100, window=3, 
-                 min_count=10, negative=10, alpha=0.0001, verbose=True):
+    def __init__(self, sentences=None, size=100, window=3, min_count=10,
+        negative=10, alpha=0.0001, tokenizer=lambda x:x.split(), verbose=True):
+
         """
         Attributes
         ----------
@@ -38,6 +39,7 @@ class Word2Vec:
         self._min_count = min_count
         self._negative = negative
         self._alpha = alpha
+        self._tokenizer = tokenizer
         self._verbose = verbose
 
         # trained attributes
@@ -57,7 +59,7 @@ class Word2Vec:
 
             x, self._idx2vocab = sent_to_word_contexts_matrix(
                 sentences, self._window, self._min_count,
-                verbose=self.verbose)
+                self._tokenizer, self.verbose)
 
             pmi, self._py = train_pmi(x,
                 as_csr=True,verbose=self.verbose)
@@ -73,6 +75,14 @@ class Word2Vec:
             def dim_reduce(pmi):
                 return safe_sparse_dot(pmi, _components.T)
 
+            # create (word, contexts) matrix
+            # x_ = ... 
+
+            # infer pmi
+            # pmi_ = infer_pmi(x_, self._py, ... )
+
+            # x_ = dim_reduce(pmi_)
+            # return x_
             raise NotImplemented
 
         def save(self, path):
