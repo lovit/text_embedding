@@ -3,3 +3,4 @@ from .utils import get_process_memory
 from .utils import check_dirs
 from .vectorizer import sents_to_word_contexts_matrix
 from .vectorizer import sents_to_unseen_word_contexts_matrix
+from .word2vec import Word2Vec
