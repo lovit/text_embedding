@@ -33,7 +33,7 @@ def sents_to_unseen_word_contexts_matrix(sents, unseen_words, vocab2idx,
 
     # indices of unseen words that will be inferred.
     idx2vocab_ = [vocab for vocab in idx2vocab_
-                  if (vocab in infer_words) and not (vocab in vocab2idx)]
+                  if (vocab in unseen_words) and not (vocab in vocab2idx)]
 
     n_vocabs_before = len(vocab2idx)
     vocab2idx_ = {vocab:idx + n_vocabs_before for idx, vocab
@@ -50,7 +50,8 @@ def sents_to_unseen_word_contexts_matrix(sents, unseen_words, vocab2idx,
     x = _encode_as_matrix(word2contexts, vocab2idx_merge, verbose)
 
     # re-numbering rows; idx - n_vocabs_before
-    x = _renumbering_rows(x, n_vocabs, n_rows=len(idx2vocab_), n_cols=n_vocabs)
+    x = _renumbering_rows(
+        x, n_vocabs_before, n_rows=len(idx2vocab_), n_cols=n_vocabs_before)
 
     if verbose:
         print('  - done')
