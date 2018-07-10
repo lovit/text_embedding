@@ -1,8 +1,10 @@
+from sklearn.decomposition import TruncatedSVD
+
 from .pmi import train_pmi
-from .pmi import infer_pmi
 from .utils import get_process_memory
 from .utils import check_dirs
 from .vectorizer import sents_to_word_contexts_matrix
+from .vectorizer import sents_to_unseen_word_contexts_matrix
 
 class Word2Vec:
 
@@ -51,39 +53,45 @@ class Word2Vec:
         if sentences:
             self.train(sentences)
 
-        @property
-        def is_trained(self):
-            return self.wv is not None
+    @property
+    def is_trained(self):
+        return self.wv is not None
 
-        def train(self, sentences):
+    def train(self, sentences):
 
-            x, self._idx2vocab = sent_to_word_contexts_matrix(
-                sentences, self._window, self._min_count,
-                self._tokenizer, self.verbose)
+        x, self._idx2vocab = sents_to_word_contexts_matrix(
+            sentences, self._window, self._min_count,
+            self._tokenizer, self._verbose)
 
-            pmi, self._py = train_pmi(x,
-                as_csr=True,verbose=self.verbose)
+        self._vocab2idx = {vocab:idx for idx, vocab
+            in enumerate(self._idx2vocab)}
 
-            svd = TruncatedSVD(n_components=self._size)
-            self.wv = svd.fit_transform(pmi)
-            self._components = svd.components_
-            self._explained_variance = svd.explained_variance_
-            self._explained_variance_ratio = svd.explained_variance_ratio_
+        pmi, self._py = train_pmi(x, alpha=self._alpha,
+            as_csr=True, verbose=self._verbose)
 
-        def infer(self, sentences, words):
+        svd = TruncatedSVD(n_components=self._size)
+        self.wv = svd.fit_transform(pmi)
+        self._components = svd.components_
+        self._explained_variance = svd.explained_variance_
+        self._explained_variance_ratio = svd.explained_variance_ratio_
 
-            def dim_reduce(pmi):
-                return safe_sparse_dot(pmi, _components.T)
+    def infer(self, sentences, words, tokenizer=None):
 
-            # create (word, contexts) matrix
-            # x_ = ... 
+        if tokenizer is None:
+            tokenizer = self._tokenizer
 
-            # infer pmi
-            # pmi_ = infer_pmi(x_, self._py, ... )
+        # create (word, contexts) matrix
+        x_, idx2vocab_ = sents_to_unseen_word_contexts_matrix(
+            sentences, words, self._vocab2idx)
 
-            # x_ = dim_reduce(pmi_)
-            # return x_
-            raise NotImplemented
+        # infer pmi
+        pmi_, _ = train_pmi(x_, py=self._py,
+            alpha=self._alpha, as_csr=True, verbose=True)
 
-        def save(self, path):
-            raise NotImplemented
+        # apply trained SVD
+        y_ = safe_sparse_dot(pmi_, _components.T)
+
+        return y_, idx2vocab_
+
+    def save(self, path):
+        raise NotImplemented
