@@ -22,6 +22,40 @@ def sents_to_word_contexts_matrix(sents, windows=3, min_tf=10,
         print('  - done')
     return x, idx2vocab
 
+def sents_to_unseen_word_contexts_matrix(sents, unseen_words, vocab2idx,
+    windows=3, min_tf=10, tokenizer=lambda x:x.split(), verbose=True):
+
+    if verbose:
+        print('Create (unseen word, contexts) matrix')
+
+    _, idx2vocab_ = _scanning_vocabulary(
+        sents, min_tf, tokenizer, verbose)
+
+    # indices of unseen words that will be inferred.
+    idx2vocab_ = [vocab for vocab in idx2vocab_
+                  if (vocab in infer_words) and not (vocab in vocab2idx)]
+
+    n_vocabs_before = len(vocab2idx)
+    vocab2idx_ = {vocab:idx + n_vocabs_before for idx, vocab
+                  in enumerate(idx2vocab_)}
+
+    word2contexts = _word_context(
+        sents, windows, tokenizer, verbose, vocab2idx,
+        base_vocabs = vocab2idx_)
+
+    # merge two word indexs
+    vocab2idx_merge = {vocab:idx for vocab, idx in vocab2idx.items()}
+    vocab2idx_merge.update(vocab2idx_)
+
+    x = _encode_as_matrix(word2contexts, vocab2idx_merge, verbose)
+
+    # re-numbering rows; idx - n_vocabs_before
+    x = _renumbering_rows(x, n_vocabs, n_rows=len(idx2vocab_), n_cols=n_vocabs)
+
+    if verbose:
+        print('  - done')
+    return x, idx2vocab_
+
 def _scanning_vocabulary(sents, min_tf, tokenizer, verbose):
 
     # counting word frequency, first
@@ -121,3 +155,10 @@ def _encode_as_matrix(word2contexts, vocab2idx, verbose):
             x.shape, ' '*20))
 
     return x
+
+def _renumbering_rows(x, n_vocabs, n_rows, n_cols):
+    rows, cols = x.nonzero()
+    data = x.data
+    rows = rows - n_vocabs
+    x_ = csr_matrix((data, (rows, cols)), shape=(n_rows, n_cols))
+    return x_
