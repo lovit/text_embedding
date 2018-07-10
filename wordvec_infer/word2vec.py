@@ -70,6 +70,9 @@ class Word2Vec:
             A sentence is represented with list of str.
         """
 
+        if self.is_trained():
+            raise ValueError('Word2Vec model already trained')
+
         x, self._idx2vocab = sents_to_word_contexts_matrix(
             sentences, self._window, self._min_count,
             self._tokenizer, self._verbose)
