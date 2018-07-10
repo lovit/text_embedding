@@ -70,14 +70,16 @@ def _scanning_vocabulary(sents, min_tf, tokenizer, verbose):
         for word in words:
             word_counter[word] += 1
 
-    if verbose:
-        _print_status('  - counting word frequency', i_sent, new_line=True)
-
     # filtering with min_tf    
     vocab2idx = {word for word, count in word_counter.items() if count >= min_tf}
     vocab2idx = {word:idx for idx, word in enumerate(
         sorted(vocab2idx, key=lambda w:-word_counter[w]))}
     idx2vocab = [word for word, _ in sorted(vocab2idx.items(), key=lambda w:w[1])]
+
+    if verbose:
+        _print_status('  - counting word frequency', i_sent)
+        print(' #vocabs = {}'.format(len(vocab2idx)))
+
     del word_counter
 
     return vocab2idx, idx2vocab
