@@ -78,14 +78,23 @@ class Word2Vec:
             in enumerate(self._idx2vocab)}
         self.n_vocabs = len(self._idx2vocab)
 
+        if self._verbose:
+            print('Training PMI ...', end='', flush=True)
+
         pmi, self._py = train_pmi(x, alpha=self._alpha,
             as_csr=True, verbose=self._verbose)
+
+        if self._verbose:
+            print(' done\nTraining SVD ...', end='', flush=True)
 
         svd = TruncatedSVD(n_components=self._size)
         self.wv = svd.fit_transform(pmi)
         self._components = svd.components_
         self._explained_variance = svd.explained_variance_
         self._explained_variance_ratio = svd.explained_variance_ratio_
+
+        if self._verbose:
+            print(' done', flush=True)
 
     def infer(self, sentences, words, append=True, tokenizer=None):
         """
@@ -110,19 +119,34 @@ class Word2Vec:
         x_, idx2vocab_ = sents_to_unseen_word_contexts_matrix(
             sentences, words, self._vocab2idx)
 
+        if self._verbose:
+            print('Training PMI ...', end='', flush=True)
+
         # infer pmi
         pmi_, _ = train_pmi(x_, py=self._py,
             alpha=self._alpha, as_csr=True, verbose=True)
 
+        if self._verbose:
+            print(' done\nApplying trained SVD ...', end='', flush=True)
+
         # apply trained SVD
         y_ = safe_sparse_dot(pmi_, self._components.T)
 
+        if self._verbose:
+            print(' done', flush=True)
+
         if append:
+            if self._verbose:
+                print('vocabs : {} -> '.format(self.n_vocabs), end='', flush=True)
+
             self._idx2vocab += idx2vocab_
             self._vocab2idx.update({vocab : idx + self.n_vocabs
                 for idx, vocab in enumerate(idx2vocab_)})
             self.wv = np.vstack([self.wv, y_])
             self.n_vocabs += len(idx2vocab_)
+
+            if self._verbose:
+                print('{}'.format(self.n_vocabs), flush=True)
 
         return y_, idx2vocab_
 
