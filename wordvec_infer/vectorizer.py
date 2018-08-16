@@ -7,6 +7,10 @@ from .utils import get_process_memory
 def sents_to_word_contexts_matrix(sents, windows=3, min_tf=10,
         tokenizer=lambda x:x.split(), dynamic_weight=False, verbose=True):
 
+    """
+    See Improving distributional similarity with lessons learned from word embeddings,
+    Omer Levy, Yoav Goldberg, and Ido Dagan, ACL 2015 for detail of dynamic_weight
+    """
     if verbose:
         print('Create (word, contexts) matrix')
 
