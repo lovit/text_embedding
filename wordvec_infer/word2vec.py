@@ -12,7 +12,8 @@ from .vectorizer import sents_to_unseen_word_contexts_matrix
 class Word2Vec:
 
     def __init__(self, sentences=None, size=100, window=3, min_count=10,
-        negative=10, alpha=0.0001, tokenizer=lambda x:x.split(), verbose=True):
+        negative=10, alpha=0.0001, tokenizer=lambda x:x.split(),
+        dynamic_weight=False, verbose=True):
 
         """
         Attributes
@@ -36,6 +37,10 @@ class Word2Vec:
         alpha : float
             Nonnegative, PMI smoothing factor
             Default is 0.0001
+        dynamic_weight : Boolean
+            Use dynamic weight such as [1/3, 2/3, 3/3] for windows = 3 if True
+        verbose : Boolean
+            Verbose mode if True
         """
 
         # user defined parameters
@@ -45,6 +50,7 @@ class Word2Vec:
         self._negative = negative
         self._alpha = alpha
         self._tokenizer = tokenizer
+        self._dynamic_weight = dynamic_weight
         self._verbose = verbose
 
         # trained attributes
@@ -75,7 +81,7 @@ class Word2Vec:
 
         x, self._idx2vocab = sents_to_word_contexts_matrix(
             sentences, self._window, self._min_count,
-            self._tokenizer, self._verbose)
+            self._tokenizer, self._dynamic_weight, self._verbose)
 
         self._vocab2idx = {vocab:idx for idx, vocab
             in enumerate(self._idx2vocab)}
