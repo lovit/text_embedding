@@ -113,6 +113,11 @@ def _word_context(sents, windows, tokenizer,
     # scanning (word, context) pairs
     word2contexts = defaultdict(lambda: defaultdict(int))
 
+    if dynamic_weight:
+        weight = [(windows-i)/windows for i in range(windows)]
+    else:
+        weight = [1] * windows
+
     for i_sent, sent in enumerate(sents):
 
         if verbose and i_sent % 1000 == 0:
@@ -129,16 +134,18 @@ def _word_context(sents, windows, tokenizer,
                 continue
 
             # left_contexts
-            for context in words[max(0, i-windows):i]:
-                if not (context in vocab2idx):
+            for w in range(windows):
+                j = i - (w + 1)
+                if j < 0 or not (words[j] in vocab2idx):
                     continue
-                word2contexts[word][context] += 1
+                word2contexts[word][words[j]] += weight[w]
 
             # right_contexts
-            for context in words[min(i+1, n):min(i+windows, n)+1]:
-                if not (context in vocab2idx):
+            for w in range(windows):
+                j = i + w + 1
+                if j >= n or not (words[j] in vocab2idx):
                     continue
-                word2contexts[word][context] += 1
+                word2contexts[word][words[j]] += weight[w]
 
     if verbose:
         _print_status('  - scanning (word, context) pairs', i_sent, new_line=True)
