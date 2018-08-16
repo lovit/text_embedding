@@ -16,30 +16,28 @@ class Word2Vec:
         dynamic_weight=False, verbose=True):
 
         """
-        Attributes
-        ----------
-        sentences : list of list of str (like)
+        :param sentences: list of list of str (like)
             Iterable of iterables, optional
             A sentence is represented with list of str.
-        size : int
+        :param size: int. passed to :py:func:`sklearn.decomposition.TruncatedSVD`.
             Word vector dimension
             Default is 100
-        window : int
+        :param window: int
             The number of context words is 2 x window
             Default is 3
-        min_count : int
+        :param min_count: int
             Minumum frequency of words
             Default is 10
-        negative : int
+        :param negative: int. passed to :py:func:`.pmi`.
             Number of negative samples. Minimum PMI is automatically
             defined with this value; log(negative)
             Default is 10
-        alpha : float
+        :param alpha: float. passed to :py:func:`.pmi`.
             Nonnegative, PMI smoothing factor
             Default is 0.0001
-        dynamic_weight : Boolean
+        :param dynamic_weight: Boolean. passed to :py:func:`.vectorizer`.
             Use dynamic weight such as [1/3, 2/3, 3/3] for windows = 3 if True
-        verbose : Boolean
+        :param verbose: Boolean
             Verbose mode if True
         """
 
