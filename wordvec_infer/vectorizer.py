@@ -5,7 +5,7 @@ from scipy.sparse import csr_matrix
 from .utils import get_process_memory
 
 def sents_to_word_contexts_matrix(sents, windows=3, min_tf=10,
-        tokenizer=lambda x:x.split(), verbose=True):
+        tokenizer=lambda x:x.split(), dynamic_weight=False, verbose=True):
 
     if verbose:
         print('Create (word, contexts) matrix')
@@ -14,7 +14,7 @@ def sents_to_word_contexts_matrix(sents, windows=3, min_tf=10,
         sents, min_tf, tokenizer, verbose)
 
     word2contexts = _word_context(
-        sents, windows, tokenizer, verbose, vocab2idx)
+        sents, windows, tokenizer, dynamic_weight, verbose, vocab2idx)
 
     x = _encode_as_matrix(word2contexts, vocab2idx, verbose)
 
@@ -23,7 +23,7 @@ def sents_to_word_contexts_matrix(sents, windows=3, min_tf=10,
     return x, idx2vocab
 
 def sents_to_unseen_word_contexts_matrix(sents, unseen_words, vocab2idx,
-    windows=3, min_tf=10, tokenizer=lambda x:x.split(), verbose=True):
+    windows=3, min_tf=10, tokenizer=lambda x:x.split(), dynamic_weight=False, verbose=True):
 
     if verbose:
         print('Create (unseen word, contexts) matrix')
@@ -40,8 +40,8 @@ def sents_to_unseen_word_contexts_matrix(sents, unseen_words, vocab2idx,
                   in enumerate(idx2vocab_)}
 
     word2contexts = _word_context(
-        sents, windows, tokenizer, verbose, vocab2idx,
-        base_vocabs = vocab2idx_)
+        sents, windows, tokenizer, dynamic_weight, verbose,
+        vocab2idx, base_vocabs = vocab2idx_)
 
     # merge two word indexs
     vocab2idx_merge = {vocab:idx for vocab, idx in vocab2idx.items()}
@@ -91,7 +91,9 @@ def _print_status(message, i_sent, new_line=False):
         flush=True, end='\n' if new_line else ''
     )
 
-def _word_context(sents, windows, tokenizer, verbose, vocab2idx, base_vocabs=None):
+def _word_context(sents, windows, tokenizer,
+    dynamic_weight, verbose, vocab2idx, base_vocabs=None):
+
     """
     Attributes
     ----------
