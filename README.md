@@ -13,10 +13,12 @@ Levy and Goldberg (2014) 는 [2] 에서 SGNS 는 (word, context) matrix 에 Shif
 
 2016-10-20 의 뉴스 기사에 대한 실험입니다. sentences 는 3 만여건의 뉴스기사 입니다. Input 은 list of str (like) 형식이면 모두 이용가능합니다.
 
-    import soynlp
-    from soynlp.utils import DoublespaceLineCorpus
+```python
+import soynlp
+from soynlp.utils import DoublespaceLineCorpus
 
-    sentences = DoublespaceLineCorpus(corpus_path, iter_sent=True)
+sentences = DoublespaceLineCorpus(corpus_path, iter_sent=True)
+```
 
 단어, '아이오아이'를 지운 뒤, 이를 inference 하기 위해 tokenizer 를 다르게 설정합니다. Default tokenizer 는 띄어쓰기 기준으로 단어를 나눕니다. 임의의 tokenizer 를 이용할 수 있습니다.
 
@@ -26,15 +28,19 @@ Levy and Goldberg (2014) 는 [2] 에서 SGNS 는 (word, context) matrix 에 Shif
 
 wordvec_infer 에서 Word2Vec 을 import 한 뒤, 앞서 정의한 '아이오아이'를 제외하는 tokenizer 를 이용합니다.
 
-    from wordvec_infer import Word2Vec
+```python
+from wordvec_infer import Word2Vec
 
-    word2vec = Word2Vec(tokenizer=my_tokenizer)
-    word2vec.train(sentences)
+word2vec = Word2Vec(tokenizer=my_tokenizer)
+word2vec.train(sentences)
+```
 
 학습된 Word2Vec 모델에서 Cosine distance 기준으로 '너무너무너무'와 비슷한 단어를 찾습니다. API 는 gensim 과 동일합니다.
 
-    word2vec.most_similar('너무너무너무')
-    
+```python
+word2vec.most_similar('너무너무너무')
+```
+
     [('신용재', 0.9270464973913624),
      ('완전체', 0.914970384426004),
      ('타이틀곡', 0.905864914102968),
@@ -48,8 +54,10 @@ wordvec_infer 에서 Word2Vec 을 import 한 뒤, 앞서 정의한 '아이오아
 
 하지만 단어 '아이오아이'는 토크나이저 과정에서 제외되어서 word vector 가 학습되지 않았습니다.
 
-    word2vec.most_similar('아이오아이')
-    
+```python
+word2vec.most_similar('아이오아이')
+```
+
     []
 
 원하는 단어들의 벡터를 추정합니다. infer 함수에 다음의 arguments 를 입력합니다.
@@ -63,17 +71,21 @@ wordvec_infer 에서 Word2Vec 을 import 한 뒤, 앞서 정의한 '아이오아
 
 Word2Vec.infer 함수는 words 의 word vector 와 index 를 return 합니다. append=True 로 설정하면 이 결과가 모두 Word2Vec 모델에 저장됩니다.
 
-    wordvec, index = word2vec.infer(
-        sentences,
-        words={'아이오아이'},
-        append=True,
-        tokenizer=lambda x:x.split()
-    )
+```python
+wordvec, index = word2vec.infer(
+    sentences,
+    words={'아이오아이'},
+    append=True,
+    tokenizer=lambda x:x.split()
+)
+```
 
 추정이 끝난 모델에 다시 한 번 단어 '너무너무너무'를 입력합니다. '아이오아이'가 유사 단어로 선택됩니다.
 
-    word2vec.most_similar('너무너무너무')
-    
+```python
+word2vec.most_similar('너무너무너무')
+```
+
     [('신용재', 0.9270464973913624),
      ('아이오아이', 0.9162263412577677),
      ('완전체', 0.914970384426004),
@@ -87,7 +99,9 @@ Word2Vec.infer 함수는 words 의 word vector 와 index 를 return 합니다. a
 
 단어 '아이오아이'의 유사어도 검색합니다. 유사 단어들이 검색됩니다.
 
-    word2vec.most_similar('아이오아이')
+```python
+word2vec.most_similar('아이오아이')
+```
 
     [('엠카운트다운', 0.9243012341336443),
      ('엠넷', 0.9219115581331467),
