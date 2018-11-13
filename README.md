@@ -1,8 +1,8 @@
 ## Word vector inference
 
-Word2Vec 은 words 를 크기가 정해진 공간 안의 distributed representation 으로 표현합니다. Skip-gram with Negative Sampling (SGNS) [1] 는 Word2Vec 의 구조 중 하나로, Softmax 의 효율적인 학습을 위하여 negative samplings 을 이용합니다.
+Word2Vec 은 words 를 크기가 정해진 공간 안의 distributed representation 으로 표현합니다. Skip-gram with Negative Sampling (SGNS) ^1 는 Word2Vec 의 구조 중 하나로, Softmax 의 효율적인 학습을 위하여 negative samplings 을 이용합니다.
 
-Levy and Goldberg (2014) 는 [2] 에서 SGNS 는 (word, context) matrix 에 Shifted Positive Point Mutual Information (SPPMI) 를 적용한 결과임을 수학적, 실험적으로 증명하였습니다. PMI 는 informative contexts 를 선택하는 역할을 하며, Singular Value Decomposition (SVD) 는 유용한 문맥만으로 표현된 (word, context) matrix 를 정해진 크기의 공간으로 축소합니다.
+Levy and Goldberg (2014) 는 ^2 에서 SGNS 는 (word, context) matrix 에 Shifted Positive Point Mutual Information (SPPMI) 를 적용한 결과임을 수학적, 실험적으로 증명하였습니다. PMI 는 informative contexts 를 선택하는 역할을 하며, Singular Value Decomposition (SVD) 는 유용한 문맥만으로 표현된 (word, context) matrix 를 정해진 크기의 공간으로 축소합니다.
 
 학습데이터에 대하여 PMI 를 계산할 때 이용하는 context words probability 와 SVD 의 components 를 기억한다면, 새로운 단어에 대해서도 (word, context) matrix 를 만든 뒤, 동일한 PMI, SVD 를 적용하여, 학습데이터와 동일한 semantic space 의 word vector 로 새로운 단어들의 distributed representation 을 추정할 수 있습니다.
 
