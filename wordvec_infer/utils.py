@@ -18,6 +18,7 @@ class Word2VecCorpus:
         self.path = path
         self.num_doc = num_doc
         self.verbose_point = verbose_point
+        self._len = 0
 
     def __iter__(self):
         vp = self.verbose_point
@@ -35,11 +36,18 @@ class Word2VecCorpus:
                     yield stream
             if vp > 0:
                 print('\riterating corpus was done%s' % (' '*20))
+            self._len = i + 1
 
     def _tokenize(self, i, doc):
-        for sent in doc.split('  '):
-            if sent:
-                yield sent.split()
+        return [sent.split() for sent in doc.split('  ') if sent]
+
+    def __len__(self):
+        if self._len == 0:
+            with open(self.path, encoding='utf-8') as f:
+                for i, _ in enumerate(f):
+                    continue
+                self._len = (i+1)
+        return self._len
 
 class Doc2VecCorpus(Word2VecCorpus):
     def _tokenize(self, i, doc):
