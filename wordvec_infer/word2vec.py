@@ -152,9 +152,8 @@ class Word2Vec:
         """
         Attributes
         ----------
-        sentences : list of list of str (like)
-            Iterable of iterables, optional
-            A sentence is represented with list of str.
+        word_context_matrix : scipy.sparse.csr.csr_matrix
+            Co-occurrance matrix
         idx2vocab : list of str
             Word list of that we want to infer vectors.
             It corresponds with rows of word_context_matrix.
@@ -191,7 +190,7 @@ class Word2Vec:
 
         return y
 
-    def most_similar(self, word, topk=10):
+    def similar_words(self, word, topk=10):
         """
         Attributes
         ----------
@@ -213,9 +212,9 @@ class Word2Vec:
             return []
 
         query_vector = self.wv[query_idx,:].reshape(1,-1)
-        return self.most_similar_from_vector(query_vector, topk, query_idx)
+        return self.similar_words_from_vector(query_vector, topk, query_idx)
 
-    def most_similar_from_vector(self, vector, topk=10, query_idx=-1):
+    def similar_words_from_vector(self, vector, topk=10, query_idx=-1):
         """
         Attributes
         ----------
