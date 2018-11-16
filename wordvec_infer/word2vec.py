@@ -91,13 +91,17 @@ class Word2Vec:
         if self.is_trained:
             raise ValueError('Word2Vec model already trained')
 
+        # scanning vocabulary
         self._vocab2idx, self._idx2vocab = self._scan_vocabulary(sentences)
         self.n_vocabs = len(self._idx2vocab)
 
+        # get co-occurrance matrix
         X = self._vectorize_cooccurrance_matrix(sentences)
 
+        # train pmi
         pmi, _, self._py = self._train_pmi(X)
 
+        # train svd & transform
         self.wv, self._components = self._train_transform_svd(pmi)
 
     def _scan_vocabulary(self, sentences):
@@ -139,15 +143,18 @@ class Word2Vec:
         contextvec = VT.T * S_
         return wordvec, contextvec
 
-    def infer(self, sentences, words, append=True, tokenizer=None):
+    def inference_words(self, word_context_matrix, idx2vocab,
+        append=True, tokenizer=None):
+
         """
         Attributes
         ----------
         sentences : list of list of str (like)
             Iterable of iterables, optional
             A sentence is represented with list of str.
-        words : list or set of str
-            Word set of that we want to infer vectors.
+        idx2vocab : list of str
+            Word list of that we want to infer vectors.
+            It corresponds with rows of word_context_matrix.
         append : Boolean
             If true, the inferring results are stored in Word2Vec model.
         tokenizer : functional
@@ -155,43 +162,29 @@ class Word2Vec:
             and output form is list of str
         """
 
-        if tokenizer is None:
-            tokenizer = self._tokenizer
-
-        # create (word, contexts) matrix
-        x_, idx2vocab_ = sents_to_unseen_word_contexts_matrix(
-            sentences, words, self._vocab2idx)
-
-        if self._verbose:
-            print('Training PMI ...', end='', flush=True)
+        x = word_context_matrix
 
         # infer pmi
-        pmi_, _, _ = train_pmi(x_, py=self._py,
+        pmi, _, _ = train_pmi(x, py=self._py,
             alpha=self._alpha, beta=1.0, as_csr=True, verbose=True)
 
-        if self._verbose:
-            print(' done\nApplying trained SVD ...', end='', flush=True)
-
         # apply trained SVD
-        y_ = safe_sparse_dot(pmi_, self._components)
-
-        if self._verbose:
-            print(' done', flush=True)
+        y = safe_sparse_dot(pmi, self._components)
 
         if append:
             if self._verbose:
                 print('vocabs : {} -> '.format(self.n_vocabs), end='', flush=True)
 
-            self._idx2vocab += idx2vocab_
+            self._idx2vocab += idx2vocab
             self._vocab2idx.update({vocab : idx + self.n_vocabs
-                for idx, vocab in enumerate(idx2vocab_)})
-            self.wv = np.vstack([self.wv, y_])
-            self.n_vocabs += len(idx2vocab_)
+                for idx, vocab in enumerate(idx2vocab)})
+            self.wv = np.vstack([self.wv, y])
+            self.n_vocabs += len(idx2vocab)
 
             if self._verbose:
                 print('{}'.format(self.n_vocabs), flush=True)
 
-        return y_, idx2vocab_
+        return y
 
     def most_similar(self, word, topk=10):
         """
