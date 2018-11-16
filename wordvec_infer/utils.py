@@ -12,3 +12,22 @@ def check_dirs(filepath):
     if dirname and dirname == '.' and not os.path.exists(dirname):
         os.makedirs(dirname)
         print('created {}'.format(dirname))
+
+class Word2VecCorpus:
+    def __init__(self, path, num_doc=-1):
+        self.path = path
+        self.num_doc = num_doc
+
+    def __iter__(self):
+        with open(self.path, encoding='utf-8') as f:
+            for i, doc in enumerate(f):
+                if self.num_doc > 0 and i >= self.num_doc:
+                    break
+                doc = doc.strip()
+                if not doc:
+                    continue
+                for sent in doc.split('  '):
+                    yield word2vec_tokenizer(sent)
+
+def word2vec_tokenizer(sent):
+    return sent.split()
