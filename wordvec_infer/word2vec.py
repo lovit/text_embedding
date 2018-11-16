@@ -12,7 +12,7 @@ from .vectorizer import sents_to_unseen_word_contexts_matrix
 class Word2Vec:
 
     def __init__(self, sentences=None, size=100, window=3, min_count=10,
-        negative=10, alpha=0.0001, tokenizer=lambda x:x.split(),
+        negative=10, alpha=0.0, beta=0.75, tokenizer=lambda x:x.split(),
         dynamic_weight=False, verbose=True):
 
         """
@@ -34,7 +34,11 @@ class Word2Vec:
             Default is 10
         :param alpha: float. passed to :py:func:`.pmi`.
             Nonnegative, PMI smoothing factor
-            Default is 0.0001
+            Default is 0.0
+        :param beta: float. passed to :py:func:`.pmi`.
+            0 < beta <= 1, PMI smoothing factor.
+            PMI_xy = log( Pxy / (Px x Py^beta) )
+            Default is 0.75
         :param dynamic_weight: Boolean. passed to :py:func:`.vectorizer`.
             Use dynamic weight such as [1/3, 2/3, 3/3] for windows = 3 if True
         :param verbose: Boolean
@@ -47,6 +51,7 @@ class Word2Vec:
         self._min_count = min_count
         self._negative = negative
         self._alpha = alpha
+        self._beta = beta
         self._tokenizer = tokenizer
         self._dynamic_weight = dynamic_weight
         self._verbose = verbose
