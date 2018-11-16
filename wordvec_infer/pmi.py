@@ -3,9 +3,9 @@ from scipy.sparse import diags
 from scipy.sparse import dok_matrix
 from .utils import get_process_memory
 
-def _as_diag(px, alpha, beta=1):
+def _as_diag(px, alpha):
     px_diag = diags(px.tolist()[0])
-    px_diag.data[0] = np.asarray([0 if v == 0 else 1 / pow(v + alpha, beta) for v in px_diag.data[0]])
+    px_diag.data[0] = np.asarray([0 if v == 0 else 1 / (v + alpha) for v in px_diag.data[0]])
     return px_diag
 
 def _as_csr_matrix(exp_pmi, min_pmi, verbose):
@@ -88,6 +88,8 @@ def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1, as_csr=True, verbose=Fal
     px = (x.sum(axis=1) / x.sum()).reshape(-1)
     if py is None:
         py = (x.sum(axis=0) / x.sum()).reshape(-1)
+    if beta < 1:
+        py = py ** beta
     pxy = x / x.sum()
 
     # transform px and py to diagonal matrix
