@@ -3,9 +3,9 @@ from scipy.sparse import diags
 from scipy.sparse import dok_matrix
 from .utils import get_process_memory
 
-def _as_diag(px, alpha):
+def _as_diag(px, alpha, beta):
     px_diag = diags(px.tolist()[0])
-    px_diag.data[0] = np.asarray([0 if v == 0 else 1/(v + alpha) for v in px_diag.data[0]])
+    px_diag.data[0] = np.asarray([0 if v == 0 else 1 / pow(v + alpha, beta) for v in px_diag.data[0]])
     return px_diag
 
 def _as_csr_matrix(exp_pmi, min_pmi, verbose):
@@ -50,7 +50,7 @@ def _as_dok_matrix(exp_pmi, min_pmi, verbose):
 
     return pmi_dok
 
-def train_pmi(x, py=None, min_pmi=0, alpha=0.0001, as_csr=True, verbose=False):
+def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1, as_csr=True, verbose=False):
     """
     Attributes
     ----------
@@ -62,7 +62,10 @@ def train_pmi(x, py=None, min_pmi=0, alpha=0.0001, as_csr=True, verbose=False):
         Default is zero.
     alpha : float
         Smoothing factor. pmi(x,y; alpha) = p_xy /(p_x * (p_y + alpha))
-        Default is 0.0001
+        Default is 0.0
+    beta : float
+        Smoothing factor. pmi(x,y) = log ( Pxy / (Px x Py^beta) )
+        Default is 1.0
     as_csr : Boolean
         Return type is csr_matrix if as_csr is True else dok_matrix
     verbose : Boolean
@@ -77,6 +80,8 @@ def train_pmi(x, py=None, min_pmi=0, alpha=0.0001, as_csr=True, verbose=False):
         Probability of words
     """
 
+    assert 0 < beta <= 1
+
     # convert x to probability matrix & marginal probability 
     px = (x.sum(axis=1) / x.sum()).reshape(-1)
     if py is None:
@@ -87,7 +92,7 @@ def train_pmi(x, py=None, min_pmi=0, alpha=0.0001, as_csr=True, verbose=False):
     # using scipy.sparse.diags
     # pmi_alpha (x,y) = p(x,y) / ( p(x) x (p(y) + alpha) )
     px_diag = _as_diag(px, 0)
-    py_diag = _as_diag(py, alpha)
+    py_diag = _as_diag(py, alpha, beta)
     exp_pmi = px_diag.dot(pxy).dot(py_diag)
 
     if as_csr:
