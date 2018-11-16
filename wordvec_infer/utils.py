@@ -26,8 +26,12 @@ class Word2VecCorpus:
                 doc = doc.strip()
                 if not doc:
                     continue
-                for sent in doc.split('  '):
-                    yield word2vec_tokenizer(sent)
+                self._tokenize(doc)
+
+    def _tokenize(self, doc):
+        for sent in doc.split('  '):
+            if sent:
+                yield word2vec_tokenizer(sent)
 
 def word2vec_tokenizer(sent):
     return sent.split()
