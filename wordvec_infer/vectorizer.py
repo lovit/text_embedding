@@ -180,6 +180,27 @@ def _renumbering_rows(x, n_vocabs, n_rows, n_cols):
     return x_
 
 def vectorize_label_word_matrix(tagged_sentence, vocab2idx):
+    """
+    Attributes
+    ----------
+    tagged_sentence : Doc2VecCorpus (like)
+        iterable, and yield (labels, words)
+        labels : Tokenized labe sequence
+            list of str format such as ['__positive__'] or ['__doc3__']
+        words : Tokenized word sequence.
+            list of str format such as ['이것', '은', '예문', '이다']
+    base_vocabs : dict or set
+        Index of base words
+
+    It returns
+    ----------
+    label2idx : dict {str:int}
+        Map from label to index
+    vocab2idx : dict {str:int}
+        Inserted arugmnet
+    X : scipy.sparse.csr.csr_matrix
+        Sparse matrix. Row is label, column is words
+    """
     label2idx = defaultdict(lambda: len(label2idx))
     label2words = defaultdict(lambda: defaultdict(int))
 
