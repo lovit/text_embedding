@@ -1,19 +1,22 @@
-from sklearn.decomposition import TruncatedSVD
 from sklearn.metrics import pairwise_distances
+from sklearn.utils import check_random_state
+from sklearn.utils.extmath import randomized_svd
 from sklearn.utils.extmath import safe_sparse_dot
 import numpy as np
 
 from .pmi import train_pmi
 from .utils import get_process_memory
 from .utils import check_dirs
-from .vectorizer import sents_to_word_contexts_matrix
 from .vectorizer import sents_to_unseen_word_contexts_matrix
+from .vectorizer import _scanning_vocabulary
+from .vectorizer import _word_context
+from .vectorizer import _encode_as_matrix
 
 class Word2Vec:
 
     def __init__(self, sentences=None, size=100, window=3, min_count=10,
-        negative=10, alpha=0.0, beta=0.75, tokenizer=lambda x:x.split(),
-        dynamic_weight=False, verbose=True):
+        negative=10, alpha=0.0, beta=0.75, dynamic_weight=False, verbose=True,
+        n_iter=5, tokenizer=lambda x:x):
 
         """
         :param sentences: list of list of str (like)
@@ -43,6 +46,11 @@ class Word2Vec:
             Use dynamic weight such as [1/3, 2/3, 3/3] for windows = 3 if True
         :param verbose: Boolean
             Verbose mode if True
+        :param n_iter: int
+            Number of SVD iteration.
+            Default is 5
+        :param tokenizer: callable
+            Default is lambda x:x
         """
 
         # user defined parameters
@@ -52,9 +60,10 @@ class Word2Vec:
         self._negative = negative
         self._alpha = alpha
         self._beta = beta
-        self._tokenizer = tokenizer
         self._dynamic_weight = dynamic_weight
         self._verbose = verbose
+        self._tokenizer = tokenizer
+        self._n_iter = n_iter
 
         # trained attributes
         self.wv = None # word vector
@@ -82,31 +91,53 @@ class Word2Vec:
         if self.is_trained:
             raise ValueError('Word2Vec model already trained')
 
-        x, self._idx2vocab = sents_to_word_contexts_matrix(
-            sentences, self._window, self._min_count,
-            self._tokenizer, self._dynamic_weight, self._verbose)
-
-        self._vocab2idx = {vocab:idx for idx, vocab
-            in enumerate(self._idx2vocab)}
+        self._vocab2idx, self._idx2vocab = self._scan_vocabulary(sentences)
         self.n_vocabs = len(self._idx2vocab)
 
+        X = self._vectorize_cooccurrance_matrix(sentences)
+
+        pmi, _, self._py = self._train_pmi(X)
+
+        self.wv, self._components = self._train_transform_svd(pmi)
+
+    def _scan_vocabulary(self, sentences):
+        vocab2idx, idx2vocab = _scanning_vocabulary(
+            sentences,
+            min_tf = self._min_count,
+            tokenizer = self._tokenizer,
+            verbose = self._verbose)
+        return vocab2idx, idx2vocab
+
+    def _vectorize_cooccurrance_matrix(self, sentences):
+        word2contexts = _word_context(sentences,
+            windows = self._window,
+            tokenizer = self._tokenizer,
+            dynamic_weight = self._dynamic_weight,
+            verbose = self._verbose,
+            vocab2idx = self._vocab2idx)
+        X = _encode_as_matrix(word2contexts, self._vocab2idx, False)
+        return X
+
+    def _train_pmi(self, X):
         if self._verbose:
             print('Training PMI ...', end='', flush=True)
 
-        pmi, self._py = train_pmi(x, alpha=self._alpha,
-            as_csr=True, verbose=self._verbose)
+        pmi, px, py = train_pmi(X,
+            alpha = self._alpha,
+            beta = self._beta,
+            as_csr = True,
+            verbose = self._verbose)
+        return pmi, px, py
 
+    def _train_transform_svd(self, pmi):
         if self._verbose:
             print(' done\nTraining SVD ...', end='', flush=True)
 
-        svd = TruncatedSVD(n_components=self._size)
-        self.wv = svd.fit_transform(pmi)
-        self._components = svd.components_
-        self._explained_variance = svd.explained_variance_
-        self._explained_variance_ratio = svd.explained_variance_ratio_
-
-        if self._verbose:
-            print(' done', flush=True)
+        U, S, VT = fit_svd(pmi, self._size, self._n_iter)
+        S_ = S ** (1/2)
+        wordvec = U * S_
+        contextvec = VT.T * S_
+        return wordvec, contextvec
 
     def infer(self, sentences, words, append=True, tokenizer=None):
         """
@@ -135,14 +166,14 @@ class Word2Vec:
             print('Training PMI ...', end='', flush=True)
 
         # infer pmi
-        pmi_, _ = train_pmi(x_, py=self._py,
-            alpha=self._alpha, as_csr=True, verbose=True)
+        pmi_, _, _ = train_pmi(x_, py=self._py,
+            alpha=self._alpha, beta=1.0, as_csr=True, verbose=True)
 
         if self._verbose:
             print(' done\nApplying trained SVD ...', end='', flush=True)
 
         # apply trained SVD
-        y_ = safe_sparse_dot(pmi_, self._components.T)
+        y_ = safe_sparse_dot(pmi_, self._components)
 
         if self._verbose:
             print(' done', flush=True)
@@ -219,3 +250,22 @@ class Word2Vec:
 
     def save(self, path):
         raise NotImplemented
+
+
+def fit_svd(X, n_components, n_iter=5, random_state=None):
+
+    if (random_state == None) or isinstance(random_state, int):
+        random_state = check_random_state(random_state)
+
+    n_features = X.shape[1]
+
+    if n_components >= n_features:
+        raise ValueError("n_components must be < n_features;"
+                         " got %d >= %d" % (n_components, n_features))
+
+    U, Sigma, VT = randomized_svd(
+        X, n_components,
+        n_iter = n_iter,
+        random_state = random_state)
+
+    return U, Sigma, VT
