@@ -50,6 +50,10 @@ class Word2VecCorpus:
         return self._len
 
 class Doc2VecCorpus(Word2VecCorpus):
+    def __init__(self, path, num_doc=-1, verbose_point=-1, yield_label=True):
+        super().__init__(path, num_doc, verbose_point)
+        self.yield_label = yield_label
+
     def _tokenize(self, i, doc):
         column = doc.split('\t')
         if len(column) == 1:
@@ -58,4 +62,7 @@ class Doc2VecCorpus(Word2VecCorpus):
         else:
             labels = column[0].split()
             words = [word for col in column[1:] for word in col.split()]
-        yield labels, words
+        if self.yield_label:
+            return ((labels, words), )
+        else:
+            return (words, )
