@@ -3,7 +3,8 @@ from .utils import get_process_memory
 from .utils import check_dirs
 from .utils import Word2VecCorpus
 from .utils import Doc2VecCorpus
-from .vectorizer import sents_to_word_contexts_matrix
-from .vectorizer import sents_to_unseen_word_contexts_matrix
-from .vectorizer import vectorize_label_word_matrix
-from .word2vec import Word2Vec
+from .vectorizer import scan_vocabulary
+from .vectorizer import dict_to_sparse
+from .vectorizer import word_context
+from .vectorizer import label_word
+# from .word2vec import Word2Vec

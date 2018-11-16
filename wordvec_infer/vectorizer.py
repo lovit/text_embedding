@@ -1,227 +1,155 @@
-import os
+import scipy as sp
 from collections import defaultdict
-from scipy.sparse import csr_matrix
 
 from .utils import get_process_memory
 
-def sents_to_word_contexts_matrix(sents, windows=3, min_tf=10,
-        tokenizer=lambda x:x.split(), dynamic_weight=False, verbose=True):
 
+def scan_vocabulary(sents, min_count):
     """
-    See Improving distributional similarity with lessons learned from word embeddings,
-    Omer Levy, Yoav Goldberg, and Ido Dagan, ACL 2015 for detail of dynamic_weight
-    """
-    if verbose:
-        print('Create (word, contexts) matrix')
+    :param sents: list of list of str (like)
+        utils.Word2VecCorpus
+    :param min_count: int
+        Minimum number of word frequency
 
-    vocab2idx, idx2vocab = _scanning_vocabulary(
-        sents, min_tf, tokenizer, verbose)
-
-    word2contexts = _word_context(
-        sents, windows, tokenizer, dynamic_weight, verbose, vocab2idx)
-
-    x = _encode_as_matrix(word2contexts, vocab2idx, verbose)
-
-    if verbose:
-        print('  - done')
-    return x, idx2vocab
-
-def sents_to_unseen_word_contexts_matrix(sents, unseen_words, vocab2idx,
-    windows=3, min_tf=10, tokenizer=lambda x:x.split(), dynamic_weight=False, verbose=True):
-
-    if verbose:
-        print('Create (unseen word, contexts) matrix')
-
-    _, idx2vocab_ = _scanning_vocabulary(
-        sents, min_tf, tokenizer, verbose)
-
-    # indices of unseen words that will be inferred.
-    idx2vocab_ = [vocab for vocab in idx2vocab_
-                  if (vocab in unseen_words) and not (vocab in vocab2idx)]
-
-    n_vocabs_before = len(vocab2idx)
-    vocab2idx_ = {vocab:idx + n_vocabs_before for idx, vocab
-                  in enumerate(idx2vocab_)}
-
-    word2contexts = _word_context(
-        sents, windows, tokenizer, dynamic_weight, verbose,
-        vocab2idx, base_vocabs = vocab2idx_)
-
-    # merge two word indexs
-    vocab2idx_merge = {vocab:idx for vocab, idx in vocab2idx.items()}
-    vocab2idx_merge.update(vocab2idx_)
-
-    x = _encode_as_matrix(word2contexts, vocab2idx_merge, verbose)
-
-    # re-numbering rows; idx - n_vocabs_before
-    x = _renumbering_rows(
-        x, n_vocabs_before, n_rows=len(idx2vocab_), n_cols=n_vocabs_before)
-
-    if verbose:
-        print('  - done')
-    return x, idx2vocab_
-
-def _scanning_vocabulary(sents, min_tf, tokenizer, verbose):
-
-    # counting word frequency, first
-    word_counter = defaultdict(int)
-
-    for i_sent, sent in enumerate(sents):
-
-        if verbose and i_sent % 1000 == 0:
-            _print_status('  - counting word frequency', i_sent)
-
-        words = tokenizer(sent)
-        for word in words:
-            word_counter[word] += 1
-
-    # filtering with min_tf    
-    vocab2idx = {word for word, count in word_counter.items() if count >= min_tf}
-    vocab2idx = {word:idx for idx, word in enumerate(
-        sorted(vocab2idx, key=lambda w:-word_counter[w]))}
-    idx2vocab = [word for word, _ in sorted(vocab2idx.items(), key=lambda w:w[1])]
-
-    if verbose:
-        _print_status('  - counting word frequency', i_sent)
-        print(' #vocabs = {}'.format(len(vocab2idx)))
-
-    del word_counter
-
-    return vocab2idx, idx2vocab
-
-def _print_status(message, i_sent, new_line=False):
-    print('\r{} from {} sents, mem={} Gb'.format(
-            message, i_sent, '%.3f' % get_process_memory()),
-        flush=True, end='\n' if new_line else ''
-    )
-
-def _word_context(sents, windows, tokenizer,
-    dynamic_weight, verbose, vocab2idx, base_vocabs=None):
-
-    """
-    Attributes
+    It returns
     ----------
-    vocab2idx : dict {str:int}
-        Index of context words
-    base_vocabs : dict or set
-        Index of base words
+    vocab_to_idx: dict {str:int}
+        vocabulary to index mapper
+    idx_to_vocab: list of str
+        vocabluary list
     """
 
-    if not base_vocabs:
-        base_vocabs = {vocab for vocab in vocab2idx}
+    counter = defaultdict(int)
+    for sent in sents:
+        for word in sent:
+            counter[word] += 1
+    counter = {word:count for word, count in counter.items()
+               if count >= min_count}
+    idx_to_vocab = [vocab for vocab in sorted(counter,
+                    key=lambda x:-counter[x])]
+    vocab_to_idx = {vocab:idx for idx, vocab in enumerate(idx_to_vocab)}
+    return vocab_to_idx, idx_to_vocab
 
-    # scanning (word, context) pairs
-    word2contexts = defaultdict(lambda: defaultdict(int))
+def dict_to_sparse(dd, row_to_idx, col_to_idx, n_rows=-1, n_cols=-1):
+    """
+    :param dd: nested dict
+        dict[str][str] = float
+    :param row_to_idx: dict {str:int}
+        Row value encoder
+    :param col_to_idx: dict {str:int}
+        Column value encoder
+    :param n_rows: int
+        Size of rows. default is len(row_to_idx)
+    :param n_cols: int
+        Size of rows. default is len(col_to_idx)
 
+    It returns
+    ----------
+    X: scipy.sparse.csr.csr_matrix
+        (n_rows, n_cols) shape sparse matrix
+    """
+
+    if n_rows == -1:
+        n_rows = len(row_to_idx)
+    if n_cols == -1:
+        n_cols = len(col_to_idx)
+
+    rows, cols, data = [], [], []
+    for r, col_val in dd.items():
+        i = row_to_idx[r]
+        for c, val in col_val.items():
+            j = col_to_idx[c]
+            rows.append(i)
+            cols.append(j)
+            data.append(val)
+    X = sp.sparse.csr_matrix((data, (rows, cols)), shape=(n_rows, n_cols))
+    return X
+
+def word_context(sents, vocab_to_idx, windows=3,
+    dynamic_weight=True, verbose=True, row_vocabs=None):
+    """
+    :param sents: list of list of str (like)
+        utils.Word2VecCorpus
+    :param vocab_to_idx: dict {str:int}
+        vocabulary to index mapper
+    :param windows: int
+        Size of context range. default is 3
+    :param dynamic_weight: Boolean
+        If True, the weight is [1, ..., 1/window] such as [1, 2/3, 1/3]
+        Default is True
+    :param verbose: Boolean
+        If True, show progress
+        Deefault is True
+    :param row_vocabs: dict or set
+        Row words. Default is all words in vocab_to_idx
+
+    It returns
+    ----------
+    dd: nested dict
+        dict[word][context] = frequency
+    """
+
+    if not row_vocabs:
+        row_vocabs = {vocab for vocab in vocab_to_idx}
+
+    w = windows
     if dynamic_weight:
-        weight = [(windows-i)/windows for i in range(windows)]
+        weight = [(w - i) / w for i in range(w)]
     else:
         weight = [1] * windows
 
-    for i_sent, sent in enumerate(sents):
-
+    dd = defaultdict(lambda: defaultdict(int))
+    for i_sent, words in enumerate(sents):
         if verbose and i_sent % 1000 == 0:
-            _print_status('  - scanning (word, context) pairs', i_sent)
-
-        words = tokenizer(sent)
+            print('\r(word, context) from {} sents ({:.3f} Gb)'.format(
+                i_sent, get_process_memory()), end='')
         if not words:
             continue
 
         n = len(words)
-
         for i, word in enumerate(words):
-            if not (word in base_vocabs):
+            if not (word in row_vocabs):
                 continue
-
             # left_contexts
             for w in range(windows):
                 j = i - (w + 1)
-                if j < 0 or not (words[j] in vocab2idx):
+                if j < 0 or not (words[j] in vocab_to_idx):
                     continue
-                word2contexts[word][words[j]] += weight[w]
-
+                dd[word][words[j]] += weight[w]
             # right_contexts
             for w in range(windows):
                 j = i + w + 1
-                if j >= n or not (words[j] in vocab2idx):
+                if j >= n or not (words[j] in vocab_to_idx):
                     continue
-                word2contexts[word][words[j]] += weight[w]
+                dd[word][words[j]] += weight[w]
 
     if verbose:
-        _print_status('  - scanning (word, context) pairs', i_sent, new_line=True)
+        print('\r(word, context) constructed from {} sents ({} words, {:.3f} Gb)'.format(
+            i_sent, len(vocab_to_idx), get_process_memory()))
+    return dd
 
-    return word2contexts
-
-def _encode_as_matrix(word2contexts, vocab2idx, verbose):
-
-    rows = []
-    cols = []
-    data = []
-    for word, contexts in word2contexts.items():
-        word_idx = vocab2idx[word]
-        for context, cooccurrence in contexts.items():
-            context_idx = vocab2idx[context]
-            rows.append(word_idx)
-            cols.append(context_idx)
-            data.append(cooccurrence)
-    x = csr_matrix((data, (rows, cols)))
-
-    if verbose:
-        print('  - (word, context) matrix was constructed. shape = {}{}'.format(
-            x.shape, ' '*20))
-
-    return x
-
-def _renumbering_rows(x, n_vocabs, n_rows, n_cols):
-    rows, cols = x.nonzero()
-    data = x.data
-    rows = rows - n_vocabs
-    x_ = csr_matrix((data, (rows, cols)), shape=(n_rows, n_cols))
-    return x_
-
-def vectorize_label_word_matrix(tagged_sentence, vocab2idx):
+def label_word(labeled_corpus, vocab_to_idx):
     """
-    Attributes
-    ----------
-    tagged_sentence : Doc2VecCorpus (like)
-        iterable, and yield (labels, words)
-        labels : Tokenized labe sequence
-            list of str format such as ['__positive__'] or ['__doc3__']
-        words : Tokenized word sequence.
-            list of str format such as ['이것', '은', '예문', '이다']
-    base_vocabs : dict or set
-        Index of base words
+    :param labeled_corpus: utils.Doc2VecCorpus (like)
+        It yield (labels, words)
+        labels and words are list of str
+    :param vocab_to_idx: dict {str:int}
+        vocabulary to index mapper
 
     It returns
     ----------
-    label2idx : dict {str:int}
-        Map from label to index
-    vocab2idx : dict {str:int}
-        Inserted arugmnet
-    X : scipy.sparse.csr.csr_matrix
-        Sparse matrix. Row is label, column is words
+    label_to_idx: dict {str:int}
+        label to index mapper
+    dd: nested dict
+        dict[label][word] = frequency
     """
-    label2idx = defaultdict(lambda: len(label2idx))
-    label2words = defaultdict(lambda: defaultdict(int))
 
-    for i, (labels, words) in enumerate(tagged_sentence):
-        words = [word for word in words if word in vocab2idx]
+    label_to_idx = defaultdict(lambda: len(label_to_idx))
+    dd = defaultdict(lambda: defaultdict(int))
+    for i, (labels, words) in enumerate(labeled_corpus):
+        words = [word for word in words if word in vocab_to_idx]
         for label in labels:
-            _ = label2idx[label]
+            _ = label_to_idx[label]
             for word in words:
-                label2words[label][word] += 1
-
-    rows = []
-    cols = []
-    data = []
-    for label, i in sorted(label2idx.items(), key=lambda x:x[1]):
-        for word, count in label2words[label].items():
-            j = vocab2idx[word]
-            rows.append(i)
-            cols.append(j)
-            data.append(count)
-
-    idx2label = [label for label, _ in sorted(label2idx.items(), key=lambda x:x[1])]
-    label2idx = dict(label2idx)
-    X = csr_matrix((data, (rows, cols)))
-    return label2idx, vocab2idx, X
+                dd[label][word] += 1
+    return label_to_idx, dd
