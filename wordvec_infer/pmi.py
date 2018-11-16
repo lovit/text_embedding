@@ -77,7 +77,9 @@ def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1, as_csr=True, verbose=Fal
     pmi : scipy.sparse.dok_matrix or scipy.sparse.csr_matrix
         (word, contexts) pmi value sparse matrix
     px : numpy.ndarray
-        Probability of words
+        Probability of rows (items)
+    py : numpy.ndarray
+        Probability of columns (features)
     """
 
     assert 0 < beta <= 1
@@ -100,4 +102,4 @@ def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1, as_csr=True, verbose=Fal
     else:
         pmi = _as_dok_matrix(exp_pmi, min_pmi, verbose)
 
-    return pmi, py
+    return pmi, px, py
