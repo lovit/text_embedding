@@ -1,3 +1,4 @@
+from .math import fit_svd
 from .math import train_pmi
 from .utils import get_process_memory
 from .utils import check_dirs
