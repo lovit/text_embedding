@@ -11,6 +11,7 @@ build/
 # Experiments
 tmp/
 config.py
+jupyter/
 
 # Jupyter notebook
 .ipynb_checkpoints/
