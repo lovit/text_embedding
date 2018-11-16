@@ -205,7 +205,7 @@ def vectorize_label_word_matrix(tagged_sentence, vocab2idx):
     label2words = defaultdict(lambda: defaultdict(int))
 
     for i, (labels, words) in enumerate(tagged_sentence):
-        words = [word for word in doc.split() if word in vocab2idx]
+        words = [word for word in words if word in vocab2idx]
         for label in labels:
             _ = label2idx[label]
             for word in words:
