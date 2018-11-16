@@ -8,4 +8,4 @@ from .vectorizer import scan_vocabulary
 from .vectorizer import dict_to_sparse
 from .vectorizer import word_context
 from .vectorizer import label_word
-# from .word2vec import Word2Vec
+from .word2vec import Word2Vec

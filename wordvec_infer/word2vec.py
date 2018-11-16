@@ -1,16 +1,9 @@
+from .math import train_pmi
+from .math import fit_svd
+from .vectorizer import scan_vocabulary
+from .vectorizer import word_context
+from .vectorizer import dict_to_sparse
 from sklearn.metrics import pairwise_distances
-from sklearn.utils import check_random_state
-from sklearn.utils.extmath import randomized_svd
-from sklearn.utils.extmath import safe_sparse_dot
-import numpy as np
-
-from .pmi import train_pmi
-from .utils import get_process_memory
-from .utils import check_dirs
-from .vectorizer import sents_to_unseen_word_contexts_matrix
-from .vectorizer import _scanning_vocabulary
-from .vectorizer import _word_context
-from .vectorizer import _encode_as_matrix
 
 class Word2Vec:
 
@@ -70,6 +63,7 @@ class Word2Vec:
         self._vocab2idx = None
         self._idx2vocab = None
         self._py = None
+        self._transformer = None
         self.n_vocabs = 0
 
         if sentences:
@@ -79,7 +73,7 @@ class Word2Vec:
     def is_trained(self):
         return self.wv is not None
 
-    def train(self, sentences):
+    def train(self, word2vec_corpus):
         """
         Attributes
         ----------
@@ -91,113 +85,41 @@ class Word2Vec:
         if self.is_trained:
             raise ValueError('Word2Vec model already trained')
 
-        # scanning vocabulary
-        self._vocab2idx, self._idx2vocab = self._scan_vocabulary(sentences)
-        self.n_vocabs = len(self._idx2vocab)
+        self._vocab_to_idx, self._idx_to_vocab = scan_vocabulary(
+            word2vec_corpus, min_count=10)
 
-        # get co-occurrance matrix
-        X = self._vectorize_cooccurrance_matrix(sentences)
-
-        # train pmi
-        pmi, _, self._py = self._train_pmi(X)
-
-        # train svd & transform
-        self.wv, self._components = self._train_transform_svd(pmi)
-
-    def _scan_vocabulary(self, sentences):
-        vocab2idx, idx2vocab = _scanning_vocabulary(
-            sentences,
-            min_tf = self._min_count,
-            tokenizer = self._tokenizer,
-            verbose = self._verbose)
-        return vocab2idx, idx2vocab
-
-    def _vectorize_cooccurrance_matrix(self, sentences):
-        word2contexts = _word_context(sentences,
+        WWd = word_context(
+            sents = word2vec_corpus,
             windows = self._window,
-            tokenizer = self._tokenizer,
             dynamic_weight = self._dynamic_weight,
             verbose = self._verbose,
-            vocab2idx = self._vocab2idx)
-        X = _encode_as_matrix(word2contexts, self._vocab2idx, False)
-        return X
+            vocab_to_idx = self._vocab_to_idx)
 
-    def _train_pmi(self, X):
+        WW = dict_to_sparse(
+            dd = WWd,
+            row_to_idx = self._vocab_to_idx,
+            col_to_idx = self._vocab_to_idx)
+
+        pmi_ww, px, self._py = train_pmi(
+            WW, beta = self._beta, min_pmi = 0)
+
         if self._verbose:
-            print('Training PMI ...', end='', flush=True)
+            print('train SVD ... ', end='')
 
-        pmi, px, py = train_pmi(X,
-            alpha = self._alpha,
-            beta = self._beta,
-            as_csr = True,
-            verbose = self._verbose)
-        return pmi, px, py
+        U, S, VT = fit_svd(pmi_ww, n_components=100, n_iter=5)
+        S_ = S ** (0.5)
+        self.wv = U * S_
+        self._transformer = VT.T * S_
 
-    def _train_transform_svd(self, pmi):
         if self._verbose:
-            print(' done\nTraining SVD ...', end='', flush=True)
-
-        U, S, VT = fit_svd(pmi, self._size, self._n_iter)
-        S_ = S ** (1/2)
-        wordvec = U * S_
-        contextvec = VT.T * S_
-        if self._verbose:
-            print(' done')
-
-        return wordvec, contextvec
-
-    def inference_words(self, word_context_matrix, idx2vocab,
-        append=True, tokenizer=None):
-
-        """
-        Attributes
-        ----------
-        word_context_matrix : scipy.sparse.csr.csr_matrix
-            Co-occurrance matrix
-        idx2vocab : list of str
-            Word list of that we want to infer vectors.
-            It corresponds with rows of word_context_matrix.
-        append : Boolean
-            If true, the inferring results are stored in Word2Vec model.
-        tokenizer : functional
-            Tokenizer functions. It assumes that the input form is str
-            and output form is list of str
-        """
-
-        x = word_context_matrix
-
-        # infer pmi
-        pmi, _, _ = train_pmi(x, py=self._py,
-            alpha=self._alpha, beta=1.0, as_csr=True, verbose=True)
-
-        # apply trained SVD
-        y = safe_sparse_dot(pmi, self._components)
-
-        if append:
-            new_words = [vocab for vocab in idx2vocab if not (vocab in self._vocab2idx)]
-            if len(new_words) == 0:
-                return y
-
-            new_index = np.asarray([i for i, vocab in enumerate(idx2vocab)
-                if not (vocab in self._vocab2idx)])
-            y_ = y[new_index]
-
-            self._idx2vocab += new_words
-            self._vocab2idx.update({vocab : idx + self.n_vocabs
-                for idx, vocab in enumerate(new_words)})
-            self.wv = np.vstack([self.wv, y_])
-            self.n_vocabs += len(new_words)
-
-        return y
+            print('done')
 
     def similar_words(self, word, topk=10):
         """
-        Attributes
-        ----------
-        word : str
+        :param word: str
             Query word
-        topk : int
-            Number of most similar words
+        :param topk: int
+            Number of most similar words. default is 10
 
         It returns
         ----------
@@ -206,7 +128,7 @@ class Word2Vec:
             Each tuple consists with (word, cosine similarity)
         """
 
-        query_idx = self._vocab2idx.get(word, -1)
+        query_idx = self._vocab_to_idx.get(word, -1)
 
         if query_idx < 0:
             return []
@@ -216,12 +138,12 @@ class Word2Vec:
 
     def similar_words_from_vector(self, vector, topk=10, query_idx=-1):
         """
-        Attributes
-        ----------
-        vector : numpy.ndarray
+        :param vector: numpy.ndarray
             A vector of query word. Its shape should be (1, self._size)
-        topk : int
+        :param topk: int
             Number of most similar words
+        :param query_idx: int
+            Word idx that to be excluded in similarity search result.
 
         It returns
         ----------
@@ -240,29 +162,7 @@ class Word2Vec:
                 continue
             if len(similars) >= topk:
                 break
-            similar_word = self._idx2vocab[similar_idx]
+            similar_word = self._idx_to_vocab[similar_idx]
             similars.append((similar_word, 1-dist[similar_idx]))
 
         return similars
-
-    def save(self, path):
-        raise NotImplemented
-
-
-def fit_svd(X, n_components, n_iter=5, random_state=None):
-
-    if (random_state == None) or isinstance(random_state, int):
-        random_state = check_random_state(random_state)
-
-    n_features = X.shape[1]
-
-    if n_components >= n_features:
-        raise ValueError("n_components must be < n_features;"
-                         " got %d >= %d" % (n_components, n_features))
-
-    U, Sigma, VT = randomized_svd(
-        X, n_components,
-        n_iter = n_iter,
-        random_state = random_state)
-
-    return U, Sigma, VT
