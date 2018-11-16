@@ -56,6 +56,7 @@ def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1, as_csr=True, verbose=Fal
         py = np.asarray((x.sum(axis=0) / x.sum()).reshape(-1))
     if beta < 1:
         py = py ** beta
+        py /= py.sum()
     pxy = x / x.sum()
 
     # transform px and py to diagonal matrix
