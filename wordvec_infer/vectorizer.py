@@ -178,3 +178,33 @@ def _renumbering_rows(x, n_vocabs, n_rows, n_cols):
     rows = rows - n_vocabs
     x_ = csr_matrix((data, (rows, cols)), shape=(n_rows, n_cols))
     return x_
+
+def vectorize_label_word_matrix(tagged_sentence, vocab2idx):
+    label2idx = defaultdict(lambda: len(label2idx))
+    label2words = defaultdict(lambda: defaultdict(int))
+
+    for i, (labels, words) in enumerate(tagged_sentence):
+        if not doc.strip():
+            continue
+        if (labels is None) or not labels:
+            labels = ['__doc%d__' % i]
+        words = [word for word in doc.split() if word in vocab2idx]
+        for label in labels:
+            _ = label2idx[label]
+            for word in words:
+                label2words[label][word] += 1
+
+    rows = []
+    cols = []
+    data = []
+    for label, i in sorted(label2idx.items(), key=lambda x:x[1]):
+        for word, count in label2words[label].items():
+            j = vocab2idx[word]
+            rows.append(i)
+            cols.append(j)
+            data.append(count)
+
+    idx2label = [label for label, _ in sorted(label2idx.items(), key=lambda x:x[1])]
+    label2idx = dict(label2idx)
+    X = csr_matrix((data, (rows, cols)))
+    return label2idx, vocab2idx, X
