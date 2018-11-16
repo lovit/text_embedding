@@ -1,7 +1,5 @@
 import numpy as np
 from scipy.sparse import diags
-from scipy.sparse import dok_matrix
-from .utils import get_process_memory
 
 def _as_diag(px, alpha):
     px_diag = diags(px.tolist()[0])
@@ -16,7 +14,7 @@ def _logarithm_and_ppmi(exp_pmi, min_exp_pmi):
     exp_pmi.data = np.log(exp_pmi.data)
     return exp_pmi
 
-def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1, as_csr=True, verbose=False):
+def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1):
     """
     Attributes
     ----------
@@ -32,11 +30,6 @@ def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1, as_csr=True, verbose=Fal
     beta : float
         Smoothing factor. pmi(x,y) = log ( Pxy / (Px x Py^beta) )
         Default is 1.0
-    as_csr : Boolean
-        Return type is csr_matrix if as_csr is True else dok_matrix
-    verbose : Boolean
-        Print progress if verbose is true.
-        Default is False
 
     It returns
     ----------
@@ -70,7 +63,4 @@ def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1, as_csr=True, verbose=Fal
     min_exp_pmi = 1 if min_pmi == 0 else np.exp(min_pmi)
     pmi = _logarithm_and_ppmi(exp_pmi, min_exp_pmi)
 
-    if as_csr:
-        return pmi, px, py
-    else:
-        return pmi.todok(), px, py
+    return pmi, px, py
