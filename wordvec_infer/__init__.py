@@ -1,4 +1,4 @@
-from .pmi import train_pmi
+from .math import train_pmi
 from .utils import get_process_memory
 from .utils import check_dirs
 from .utils import Word2VecCorpus
