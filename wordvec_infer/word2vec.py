@@ -141,6 +141,9 @@ class Word2Vec:
         S_ = S ** (1/2)
         wordvec = U * S_
         contextvec = VT.T * S_
+        if self._verbose:
+            print(' done')
+
         return wordvec, contextvec
 
     def inference_words(self, word_context_matrix, idx2vocab,
@@ -172,17 +175,19 @@ class Word2Vec:
         y = safe_sparse_dot(pmi, self._components)
 
         if append:
-            if self._verbose:
-                print('vocabs : {} -> '.format(self.n_vocabs), end='', flush=True)
+            new_words = [vocab for vocab in idx2vocab if not (vocab in self._vocab2idx)]
+            if len(new_words) == 0:
+                return y
 
-            self._idx2vocab += idx2vocab
+            new_index = np.asarray([i for i, vocab in enumerate(idx2vocab)
+                if not (vocab in self._vocab2idx)])
+            y_ = y[new_index]
+
+            self._idx2vocab += new_words
             self._vocab2idx.update({vocab : idx + self.n_vocabs
-                for idx, vocab in enumerate(idx2vocab)})
-            self.wv = np.vstack([self.wv, y])
-            self.n_vocabs += len(idx2vocab)
-
-            if self._verbose:
-                print('{}'.format(self.n_vocabs), flush=True)
+                for idx, vocab in enumerate(new_words)})
+            self.wv = np.vstack([self.wv, y_])
+            self.n_vocabs += len(new_words)
 
         return y
 
