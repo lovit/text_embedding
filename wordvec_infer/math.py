@@ -17,20 +17,20 @@ def _logarithm_and_ppmi(exp_pmi, min_exp_pmi):
     exp_pmi.data = np.log(exp_pmi.data)
     return exp_pmi
 
-def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1):
+def train_pmi(X, py=None, min_pmi=0, alpha=0.0, beta=1):
     """
-    Attributes
-    ----------
-    x : scipy.sparse.csr_matrix
+    :param X: scipy.sparse.csr_matrix
         (word, contexts) sparse matrix
-    min_pmi : float
+    :param py: numpy.ndarray
+        (1, word) shape, probability of context words.
+    :param min_pmi: float
         Minimum value of pmi. all the values that smaller than min_pmi
         are reset to zero.
         Default is zero.
-    alpha : float
+    :param alpha: float
         Smoothing factor. pmi(x,y; alpha) = p_xy /(p_x * (p_y + alpha))
         Default is 0.0
-    beta : float
+    :param beta: float
         Smoothing factor. pmi(x,y) = log ( Pxy / (Px x Py^beta) )
         Default is 1.0
 
@@ -47,13 +47,13 @@ def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1):
     assert 0 < beta <= 1
 
     # convert x to probability matrix & marginal probability 
-    px = np.asarray((x.sum(axis=1) / x.sum()).reshape(-1))
+    px = np.asarray((X.sum(axis=1) / X.sum()).reshape(-1))
     if py is None:
-        py = np.asarray((x.sum(axis=0) / x.sum()).reshape(-1))
+        py = np.asarray((X.sum(axis=0) / X.sum()).reshape(-1))
     if beta < 1:
         py = py ** beta
         py /= py.sum()
-    pxy = x / x.sum()
+    pxy = X / X.sum()
 
     # transform px and py to diagonal matrix
     # using scipy.sparse.diags
@@ -69,6 +69,26 @@ def train_pmi(x, py=None, min_pmi=0, alpha=0.0, beta=1):
     return pmi, px, py
 
 def fit_svd(X, n_components, n_iter=5, random_state=None):
+    """
+    :param X: scipy.sparse.csr_matrix
+        Input matrix
+    :param n_components: int
+        Size of embedding dimension
+    :param n_iter: int
+        Maximum number of iteration. Default is 5
+    :param random_state: random state
+        Default is None
+
+    It returns
+    ----------
+    U : numpy.ndarray
+        Representation matrix of rows. shape = (n_rows, n_components)
+    Sigma : numpy.ndarray
+        Eigenvalue of dimension. shape = (n_components, n_components)
+        Diagonal value are in decreasing order
+    VT : numpy.ndarray
+        Representation matrix of columns. shape = (n_components, n_cols)
+    """
 
     if (random_state == None) or isinstance(random_state, int):
         random_state = check_random_state(random_state)
