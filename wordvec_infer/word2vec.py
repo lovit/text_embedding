@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn.metrics import pairwise_distances
 from sklearn.utils.extmath import safe_sparse_dot
 from .math import train_pmi
@@ -62,8 +63,9 @@ class Word2Vec:
 
         # trained attributes
         self.wv = None # word vector
-        self._vocab2idx = None
-        self._idx2vocab = None
+        self._vocab_to_idx = None
+        self._vocab_to_idx_ = None # include appended words
+        self._idx_to_vocab = None
         self._py = None
         self._transformer = None
         self.n_vocabs = 0
@@ -86,6 +88,7 @@ class Word2Vec:
 
         self._vocab_to_idx, self._idx_to_vocab = scan_vocabulary(
             word2vec_corpus, min_count=10)
+        self._vocab_to_idx_ = dict(self._vocab_to_idx.items())
 
         WWd = word_context(
             sents = word2vec_corpus,
@@ -127,7 +130,7 @@ class Word2Vec:
             Each tuple consists with (word, cosine similarity)
         """
 
-        query_idx = self._vocab_to_idx.get(word, -1)
+        query_idx = self._vocab_to_idx_.get(word, -1)
 
         if query_idx < 0:
             return []
@@ -201,10 +204,34 @@ class Word2Vec:
             Inferred word vectors. (n_words, size)
         """
 
+        if (append) and (row_to_vocab is None):
+            raise ValueError('row_to_vocab should be inserted if append = True')
+
         pmi_ww, _, _ = train_pmi(X,
             py=self._py,  beta=1, min_pmi=0)
 
         y = safe_sparse_dot(pmi_ww, self._transformer)
+
+        if append:
+            n = self.wv.shape[0]
+            idx_ = [i for i, vocab in enumerate(row_to_vocab)
+                    if not (vocab in self._vocab_to_idx_)]
+
+            # if exist no word to be appended
+            if not idx_:
+                return y
+
+            vocabs_ = [row_to_vocab[i] for i in idx_]
+            vec_ = y[np.asarray(idx_)]
+
+            self._idx_to_vocab += vocabs_
+            for i, vocab in enumerate(vocabs_):
+                self._vocab_to_idx_[vocab] = n + i
+            self.wv = np.vstack([self.wv, vec_])
+
+            if self._verbose:
+                print('%d terms are appended' % len(vocabs_))
+
         return y
 
     def vectorize_word_context_matrix(self, word2vec_corpus, word_set):
