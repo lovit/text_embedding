@@ -54,10 +54,7 @@ class Doc2Vec(Word2Vec):
         if self._verbose:
             print('train SVD ... ', end='')
 
-        U, S, VT = fit_svd(pmi, self._size)
-        S_ = S ** (0.5)
-        representation = U * S_
-        transformer = VT.T * (S_ **(-1))
+        representation, transformer = self._get_repr_and_trans(pmi)
 
         self.wv = representation[:n_vocab]
         self.dv = representation[n_vocab:]
