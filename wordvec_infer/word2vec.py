@@ -1,9 +1,11 @@
-from .math import train_pmi
-from .math import fit_svd
-from .vectorizer import scan_vocabulary
-from .vectorizer import word_context
-from .vectorizer import dict_to_sparse
+# from .math import train_pmi
+# from .math import fit_svd
+# from .vectorizer import scan_vocabulary
+# from .vectorizer import word_context
+# from .vectorizer import dict_to_sparse
 from sklearn.metrics import pairwise_distances
+from sklearn.utils.extmath import safe_sparse_dot
+from numpy.linalg import inv
 
 class Word2Vec:
 
@@ -166,3 +168,36 @@ class Word2Vec:
             similars.append((similar_word, 1-dist[similar_idx]))
 
         return similars
+
+    def infer_wordvec(self, word2vec_corpus, word_set, append=True):
+        WW, idx_to_vocab_ = self.vectorize_word_context_matrix(
+            word2vec_corpus, word_set)
+
+        self.infer_wordvec_from_vector(WW, idx_to_vocab_, append)
+
+    def infer_wordvec_from_vector(self, X, row_to_vocab=None, append=True):
+        pmi_ww, _, _ = train_pmi(X,
+            py=self._py,  beta=1, min_pmi=0)
+
+        y = safe_sparse_dot(pmi_ww, self._transformer)
+        return y
+
+    def vectorize_word_context_matrix(self, word2vec_corpus, word_set):
+        WWd = word_context(
+            sents = word2vec_corpus,
+            windows = self._window,
+            dynamic_weight = self._dynamic_weight,
+            verbose = self._verbose,
+            vocab_to_idx = self._vocab_to_idx,
+            row_vocabs = word_set
+        )
+
+        idx_to_vocab_ = [vocab for vocab in sorted(word_set)]
+        vocab_to_idx_ = {vocab:idx for idx, vocab in enumerate(idx_to_vocab_)}
+
+        WW = dict_to_sparse(
+            dd = WWd,
+            row_to_idx = vocab_to_idx_,
+            col_to_idx = self._vocab_to_idx)
+
+        return WW, idx_to_vocab_
