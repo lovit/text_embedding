@@ -38,8 +38,10 @@ class Doc2Vec(Word2Vec):
             doc2vec_corpus, self._vocab_to_idx)
 
         doc2vec_corpus.yield_label = True
-        DW, label_to_idx = self._make_label_word_matrix(
+        DW, self._label_to_idx = self._make_label_word_matrix(
             doc2vec_corpus, self._vocab_to_idx)
+        self._idx_to_label = [label for label, idx
+            in sorted(self._label_to_idx.items(), key=lambda x:x[1])]
 
         X = self._make_stacked_matrix(WW, DW)
 
