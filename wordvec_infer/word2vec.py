@@ -11,8 +11,8 @@ from .vectorizer import word_context
 class Word2Vec:
 
     def __init__(self, sentences=None, size=100, window=3, min_count=10,
-        negative=10, alpha=0.0, beta=0.75, dynamic_weight=False, verbose=True,
-        n_iter=5, tokenizer=lambda x:x):
+        negative=10, alpha=0.0, beta=0.75, dynamic_weight=False,
+        verbose=True, n_iter=5):
 
         """
         :param sentences: list of list of str (like)
@@ -45,8 +45,6 @@ class Word2Vec:
         :param n_iter: int
             Number of SVD iteration.
             Default is 5
-        :param tokenizer: callable
-            Default is lambda x:x
         """
 
         # user defined parameters
@@ -112,6 +110,7 @@ class Word2Vec:
         S_ = S ** (0.5)
         self.wv = U * S_
         self._transformer = VT.T * (S_ ** (-1))
+        self.n_vocabs = self.wv.shape[0]
 
         if self._verbose:
             print('done')
@@ -228,6 +227,7 @@ class Word2Vec:
             for i, vocab in enumerate(vocabs_):
                 self._vocab_to_idx_[vocab] = n + i
             self.wv = np.vstack([self.wv, vec_])
+            self.n_vocabs += len(idx_)
 
             if self._verbose:
                 print('%d terms are appended' % len(vocabs_))
