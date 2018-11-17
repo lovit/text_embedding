@@ -59,11 +59,14 @@ class Doc2Vec(Word2Vec):
         self.wv = representation[:n_vocab]
         self.dv = representation[n_vocab:]
         self._transformer = transformer[:n_vocab]
-
         self.n_vocabs = n_vocab
 
         if self._verbose:
             print('done')
+
+        self._transformer_ = self._get_word2vec_transformer(WW)
+        self._label_influence = self._get_label_influence(
+            self._transformer, self._transformer_)
 
     def _make_label_word_matrix(self, doc2vec_corpus, vocab_to_idx):
         label_to_idx, DWd = label_word(doc2vec_corpus, vocab_to_idx)
@@ -87,6 +90,15 @@ class Doc2Vec(Word2Vec):
             shape=(n_vocab + n_label, n_label))
         X = sp.sparse.hstack([WD_W, WD_D]).tocsr()
         return X
+
+    def _get_word2vec_transformer(self, WW):
+        pmi_ww, _, _ = train_pmi(WW, beta=self._beta, min_pmi=0)
+        _, transformer = self._get_repr_and_trans(pmi_ww)
+        return transformer
+
+    def _get_label_influence(self, u, v):
+        # TODO
+        return None
 
     def similar_docs(self, bow, topk=10):
         raise NotImplemented
