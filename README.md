@@ -14,105 +14,77 @@ Levy and Goldberg (2014) 는 ^2 에서 SGNS 는 (word, context) matrix 에 Shift
 2016-10-20 의 뉴스 기사에 대한 실험입니다. sentences 는 3 만여건의 뉴스기사 입니다. Input 은 list of str (like) 형식이면 모두 이용가능합니다.
 
 ```python
-import soynlp
-from soynlp.utils import DoublespaceLineCorpus
-
-sentences = DoublespaceLineCorpus(corpus_path, iter_sent=True)
-```
-
-단어, '아이오아이'를 지운 뒤, 이를 inference 하기 위해 tokenizer 를 다르게 설정합니다. Default tokenizer 는 띄어쓰기 기준으로 단어를 나눕니다. 임의의 tokenizer 를 이용할 수 있습니다.
-
-    def my_tokenizer(sent, passwords={'아이오아이'}):
-        words = [word for word in sent.split() if not (word in passwords)]
-        return words
-
-wordvec_infer 에서 Word2Vec 을 import 한 뒤, 앞서 정의한 '아이오아이'를 제외하는 tokenizer 를 이용합니다.
-
-```python
+from wordvec_infer import Word2VecCorpus
 from wordvec_infer import Word2Vec
 
-word2vec = Word2Vec(tokenizer=my_tokenizer)
-word2vec.train(sentences)
+corpus_path = '2016-10-20-news_noun'
+word2vec_corpus = Word2VecCorpus(corpus_path)
+word2vec = Word2Vec(word2vec_corpus)
 ```
 
-학습된 Word2Vec 모델에서 Cosine distance 기준으로 '너무너무너무'와 비슷한 단어를 찾습니다. API 는 gensim 과 동일합니다.
+학습된 Word2Vec 모델에서 Cosine distance 기준으로 '뉴스' 와 비슷한 단어를 찾습니다.
 
 ```python
-word2vec.most_similar('너무너무너무')
+word2vec.similar_words('뉴스')
 ```
 
-    [('신용재', 0.9270464973913624),
-     ('완전체', 0.914970384426004),
-     ('타이틀곡', 0.905864914102968),
-     ('엠카운트다운', 0.9041150133215388),
-     ('백퍼센트', 0.9014783849405605),
-     ('몬스타엑스', 0.9010203753612409),
-     ('곡으로', 0.8990371268486782),
-     ('안무', 0.8907120459528796),
-     ('박진영', 0.8871723098381121),
-     ('신곡', 0.8833824952633795)]
+    [('저작권자', 0.7723657073990423),
+     ('기사', 0.7668060454902694),
+     ('재배포', 0.7314359676352564),
+     ('공감', 0.7235818366145983),
+     ('금지', 0.7150778814892842),
+     ('무단', 0.7115565530481157),
+     ('뉴시스', 0.6645712933938247),
+     ('전자신문', 0.621077137745182),
+     ('영상', 0.6161913128674865),
+     ('한국경제', 0.5922918560576881)]
 
-하지만 단어 '아이오아이'는 토크나이저 과정에서 제외되어서 word vector 가 학습되지 않았습니다.
+Word2Vec 모델을 학습하는데 이용하였던 context words 를 기준으로 새로운 문서 집합에 대하여 word - context cooccurrance matrix 를 만들 수 있습니다. Cooccurrance matrix 의 rows 에 해당하는 단어는 word_set 에 입력합니다.
 
 ```python
-word2vec.most_similar('아이오아이')
+additional_corpus = Word2VecCorpus(new_corpus_path)
+
+WW, idx_to_vocab_ = word2vec.vectorize_word_context_matrix(
+    additional_corpus,
+    word_set = {'아이오아이', '너무너무너무'})
 ```
 
-    []
-
-원하는 단어들의 벡터를 추정합니다. infer 함수에 다음의 arguments 를 입력합니다.
-
-| Variable name | Type | Description | 
-| --- | --- | --- |
-| sentences | list of str (like) | Training sentence |
-| words | set of str (like) | Words we want to infer their vector |
-| append | Boolean | Store inference results to Word2Vec model if it is True. Default is True |
-| tokenizer | functional | tokenizer function. Default is lambda x:x.split() |
-
-Word2Vec.infer 함수는 words 의 word vector 와 index 를 return 합니다. append=True 로 설정하면 이 결과가 모두 Word2Vec 모델에 저장됩니다.
+idx_to_vocab_ 은 새롭게 만들어진 word - context cooccurrance matrix 의 rows 에 해당하는 단어가 포함되어 있습니다.
 
 ```python
-wordvec, index = word2vec.infer(
-    sentences,
-    words={'아이오아이'},
-    append=True,
-    tokenizer=lambda x:x.split()
-)
+print(idx_to_vocab_)
+# ['너무너무너무', '아이오아이']
 ```
 
-추정이 끝난 모델에 다시 한 번 단어 '너무너무너무'를 입력합니다. '아이오아이'가 유사 단어로 선택됩니다.
+WW 는 scipy.sparse.csr_matrix 입니다. WW 의 column 에 해당하는 단어는 아래에 저장되어 있습니다.
 
 ```python
-word2vec.most_similar('너무너무너무')
+word2vec._idx_to_vocab
 ```
 
-    [('신용재', 0.9270464973913624),
-     ('아이오아이', 0.9162263412577677),
-     ('완전체', 0.914970384426004),
-     ('타이틀곡', 0.905864914102968),
-     ('엠카운트다운', 0.9041150133215388),
-     ('백퍼센트', 0.9014783849405605),
-     ('몬스타엑스', 0.9010203753612409),
-     ('곡으로', 0.8990371268486782),
-     ('안무', 0.8907120459528796),
-     ('박진영', 0.8871723098381121)]
-
-단어 '아이오아이'의 유사어도 검색합니다. 유사 단어들이 검색됩니다.
+Word - context cooccurrnace matrix 를 입력하면 새로운 단어에 대한 Word2Vec inference vector 를 얻을 수 있습니다.
 
 ```python
-word2vec.most_similar('아이오아이')
+y = word2vec.infer_wordvec_from_vector(WW, idx_to_vocab_)
 ```
 
-    [('엠카운트다운', 0.9243012341336443),
-     ('엠넷', 0.9219115581331467),
-     ('완전체', 0.91625257534599),
-     ('너무너무너무', 0.9162263412577677),
-     ('타이틀곡', 0.9074516014443481),
-     ('몬스타엑스', 0.9061148638752767),
-     ('멤버들', 0.9013150455703564),
-     ('오블리스', 0.9005074700480684),
-     ('신용재', 0.8961139817184961),
-     ('백퍼센트', 0.8934708002132166)]
+단어 벡터를 이용하여 유사어 검색이 가능합니다.
+
+```python
+word2vec.similar_words_from_vector(y[1].reshape(1,-1))
+```
+
+    [('아이오아이', 0.9990096169250022),
+     ('완전체', 0.9188383418018635),
+     ('엠카운트다운', 0.8988674553133801),
+     ('엠넷', 0.8944098000201239),
+     ('타이틀곡', 0.8893240912042681),
+     ('너무너무너무', 0.8874956375432596),
+     ('멤버들', 0.8733448469851375),
+     ('오블리스', 0.8610452204993291),
+     ('박진영', 0.8593707053005574),
+     ('세븐', 0.8585589634747168)]
+
 
 ### References
 - [1] Mikolov, T., Sutskever, I., Chen, K., Corrado, G. S., & Dean, J. (2013). [Distributed representations of words and phrases and their compositionality][word2vec]. In Advances in neural information processing systems (pp. 3111-3119).
