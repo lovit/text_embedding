@@ -85,7 +85,7 @@ class Word2Vec:
             raise ValueError('Word2Vec model already trained')
 
         self._vocab_to_idx, self._idx_to_vocab = scan_vocabulary(
-            word2vec_corpus, min_count=10)
+            word2vec_corpus, min_count=self._min_count)
         self._vocab_to_idx_ = dict(self._vocab_to_idx.items())
 
         WWd = word_context(
