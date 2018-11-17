@@ -109,7 +109,7 @@ class Word2Vec:
         U, S, VT = fit_svd(pmi_ww, n_components=100, n_iter=5)
         S_ = S ** (0.5)
         self.wv = U * S_
-        self._transformer = VT.T * S_
+        self._transformer = VT.T * (S_ ** (-1))
 
         if self._verbose:
             print('done')
