@@ -96,14 +96,18 @@ class Word2Vec:
         if self._verbose:
             print('train SVD ... ', end='')
 
-        U, S, VT = fit_svd(pmi_ww, n_components=self._size, n_iter=self._n_iter)
-        S_ = S ** (0.5)
-        self.wv = U * S_
-        self._transformer = VT.T * (S_ ** (-1))
+        self.wv, self._transformer = self._get_repr_and_trans(pmi_ww)
         self.n_vocabs = self.wv.shape[0]
 
         if self._verbose:
             print('done')
+
+    def _get_repr_and_trans(self, X):
+        U, S, VT = fit_svd(X, n_components=self._size, n_iter=self._n_iter)
+        S_ = S ** (0.5)
+        representation = U * S_
+        transformer = VT.T * (S_ ** (-1))
+        return representation, transformer
 
     def _make_word_context_matrix(self, word2vec_corpus, vocab_to_idx):
         WWd = word_context(
