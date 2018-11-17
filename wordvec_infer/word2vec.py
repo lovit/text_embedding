@@ -170,12 +170,40 @@ class Word2Vec:
         return similars
 
     def infer_wordvec(self, word2vec_corpus, word_set, append=True):
+        """
+        :param word2vec_corpus: utils.Word2VecCorpus (like)
+            It yield sent. The form of sent is list of str
+        :param word_set: set of str
+            Words that we want to infer vectors
+        :param append: Boolean
+            If True, vector of unseen words are stored in model.
+
+        It returns
+        ----------
+        y : numpy.ndarray
+            Inferred word vectors. (n_words, size)
+        """
+
         WW, idx_to_vocab_ = self.vectorize_word_context_matrix(
             word2vec_corpus, word_set)
 
         self.infer_wordvec_from_vector(WW, idx_to_vocab_, append)
 
     def infer_wordvec_from_vector(self, X, row_to_vocab=None, append=True):
+        """
+        :param X: scipy.sparse.csr_matrix
+            (word, context) cooccurrance matrix
+        :param row_to_vocab: list of str
+            Word index that corresponds row of X
+        :param append: Boolean
+            If True, vector of unseen words are stored in model.
+
+        It returns
+        ----------
+        y : numpy.ndarray
+            Inferred word vectors. (n_words, size)
+        """
+
         pmi_ww, _, _ = train_pmi(X,
             py=self._py,  beta=1, min_pmi=0)
 
@@ -183,6 +211,20 @@ class Word2Vec:
         return y
 
     def vectorize_word_context_matrix(self, word2vec_corpus, word_set):
+        """
+        :param word2vec_corpus: utils.Word2VecCorpus (like)
+            It yield sent. The form of sent is list of str
+        :param word_set: set of str
+            Words that we want to infer vectors
+
+        It returns
+        ----------
+        WW : scipy.sparse.csr_matrix
+            WW[word, context] = frequency
+        idx_to_vocab_ : list of str
+            Word list that corresponds rows of WW
+        """
+
         WWd = word_context(
             sents = word2vec_corpus,
             windows = self._window,
