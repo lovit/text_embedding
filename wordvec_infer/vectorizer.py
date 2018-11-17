@@ -160,6 +160,7 @@ def label_word(labeled_corpus, vocab_to_idx, verbose=True):
                 dd[label][word] += 1
 
     if verbose:
-        print('\r(label, word) was constructed  ')
+        args = (len(label_to_idx), len(vocab_to_idx))
+        print('\r(label, word) was constructed (%d labels, %d words)' % args)
 
     return label_to_idx, dd
