@@ -124,17 +124,20 @@ def word_context(sents, vocab_to_idx, windows=3,
                 dd[word][words[j]] += weight[w]
 
     if verbose:
-        print('\r(word, context) constructed from {} sents ({} words, {:.3f} Gb)'.format(
+        print('\r(word, context) was constructed from {} sents ({} words, {:.3f} Gb)'.format(
             i_sent, len(vocab_to_idx), get_process_memory()))
     return dd
 
-def label_word(labeled_corpus, vocab_to_idx):
+def label_word(labeled_corpus, vocab_to_idx, verbose=True):
     """
     :param labeled_corpus: utils.Doc2VecCorpus (like)
         It yield (labels, words)
         labels and words are list of str
     :param vocab_to_idx: dict {str:int}
         vocabulary to index mapper
+    :param verbose: Boolean
+        If True, show progress
+        Deefault is True
 
     It returns
     ----------
@@ -144,6 +147,9 @@ def label_word(labeled_corpus, vocab_to_idx):
         dict[label][word] = frequency
     """
 
+    if verbose:
+        print('(label, word) construction ...', end='')
+
     label_to_idx = defaultdict(lambda: len(label_to_idx))
     dd = defaultdict(lambda: defaultdict(int))
     for i, (labels, words) in enumerate(labeled_corpus):
@@ -152,4 +158,8 @@ def label_word(labeled_corpus, vocab_to_idx):
             _ = label_to_idx[label]
             for word in words:
                 dd[label][word] += 1
+
+    if verbose:
+        print('\r(label, word) was constructed  ')
+
     return label_to_idx, dd
