@@ -56,7 +56,6 @@ class Word2Vec:
         self._beta = beta
         self._dynamic_weight = dynamic_weight
         self._verbose = verbose
-        self._tokenizer = tokenizer
         self._n_iter = n_iter
 
         # trained attributes
@@ -106,7 +105,7 @@ class Word2Vec:
         if self._verbose:
             print('train SVD ... ', end='')
 
-        U, S, VT = fit_svd(pmi_ww, n_components=100, n_iter=5)
+        U, S, VT = fit_svd(pmi_ww, n_components=self._size, n_iter=self._n_iter)
         S_ = S ** (0.5)
         self.wv = U * S_
         self._transformer = VT.T * (S_ ** (-1))
