@@ -1,11 +1,11 @@
-# from .math import train_pmi
-# from .math import fit_svd
-# from .vectorizer import scan_vocabulary
-# from .vectorizer import word_context
-# from .vectorizer import dict_to_sparse
 from sklearn.metrics import pairwise_distances
 from sklearn.utils.extmath import safe_sparse_dot
-from numpy.linalg import inv
+from .math import train_pmi
+from .math import fit_svd
+from .vectorizer import dict_to_sparse
+from .vectorizer import scan_vocabulary
+from .vectorizer import word_context
+
 
 class Word2Vec:
 
