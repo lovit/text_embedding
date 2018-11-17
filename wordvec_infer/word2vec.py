@@ -87,17 +87,8 @@ class Word2Vec:
             word2vec_corpus, min_count=self._min_count)
         self._vocab_to_idx_ = dict(self._vocab_to_idx.items())
 
-        WWd = word_context(
-            sents = word2vec_corpus,
-            windows = self._window,
-            dynamic_weight = self._dynamic_weight,
-            verbose = self._verbose,
-            vocab_to_idx = self._vocab_to_idx)
-
-        WW = dict_to_sparse(
-            dd = WWd,
-            row_to_idx = self._vocab_to_idx,
-            col_to_idx = self._vocab_to_idx)
+        WW = self._make_word_context_matrix(
+            word2vec_corpus, self._vocab_to_idx)
 
         pmi_ww, px, self._py = train_pmi(
             WW, beta = self._beta, min_pmi = 0)
@@ -113,6 +104,21 @@ class Word2Vec:
 
         if self._verbose:
             print('done')
+
+    def _make_word_context_matrix(self, word2vec_corpus, vocab_to_idx):
+        WWd = word_context(
+            sents = word2vec_corpus,
+            windows = self._window,
+            dynamic_weight = self._dynamic_weight,
+            verbose = self._verbose,
+            vocab_to_idx = vocab_to_idx)
+
+        WW = dict_to_sparse(
+            dd = WWd,
+            row_to_idx = vocab_to_idx,
+            col_to_idx = vocab_to_idx)
+
+        return WW
 
     def similar_words(self, word, topk=10):
         """
