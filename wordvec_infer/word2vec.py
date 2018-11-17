@@ -77,11 +77,8 @@ class Word2Vec:
 
     def train(self, word2vec_corpus):
         """
-        Attributes
-        ----------
-        sentences : list of list of str (like)
-            Iterable of iterables, optional
-            A sentence is represented with list of str.
+        :param word2vec_corpus: utils.Word2VecCorpus (like)
+            It yield sent. The form of sent is list of str
         """
 
         if self.is_trained:
