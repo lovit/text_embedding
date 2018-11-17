@@ -154,6 +154,8 @@ def label_word(labeled_corpus, vocab_to_idx, verbose=True):
     dd = defaultdict(lambda: defaultdict(int))
     for i, (labels, words) in enumerate(labeled_corpus):
         words = [word for word in words if word in vocab_to_idx]
+        if not words:
+            continue
         for label in labels:
             _ = label_to_idx[label]
             for word in words:
