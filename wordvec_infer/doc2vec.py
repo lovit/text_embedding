@@ -2,7 +2,6 @@ import numpy as np
 import scipy as sp
 from sklearn.metrics import pairwise_distances
 from sklearn.utils.extmath import safe_sparse_dot
-from .math import compute_embedding_difference
 from .math import fit_svd
 from .math import train_pmi
 from .vectorizer import dict_to_sparse
@@ -13,9 +12,8 @@ from .word2vec import Word2Vec
 class Doc2Vec(Word2Vec):
     def __init__(self, sentences=None, size=100, window=3, min_count=10,
         negative=10, alpha=0.0, beta=0.75, dynamic_weight=False,
-        verbose=True, n_iter=5, check_influence=False):
+        verbose=True, n_iter=5):
 
-        self._check_influence = check_influence
         super().__init__(sentences, size, window,
             min_count, negative, alpha, beta,
             dynamic_weight, verbose, n_iter)
@@ -71,9 +69,6 @@ class Doc2Vec(Word2Vec):
             print('done')
 
         self._transformer_ = self._get_word2vec_transformer(WW)
-        if self._check_influence:
-            self._label_influence, self._diff = compute_embedding_difference(
-                self._transformer, self._transformer_, pmi, verbose=self._verbose)
 
     def _make_label_word_matrix(self, doc2vec_corpus, vocab_to_idx):
         label_to_idx, DWd = label_word(doc2vec_corpus, vocab_to_idx)
@@ -138,3 +133,34 @@ class Doc2Vec(Word2Vec):
             idx_to_label = [label for label in
                 sorted(label_to_idx, key=lambda x:label_to_idx[x])]
             return y, idx_to_label
+
+def label_influence(doc2vec_model, doc2vec_corpus,
+    batch_size=1000, topk=100, verbose=True):
+
+    doc2vec_corpus.yield_label = False
+    WW = doc2vec_model._make_word_context_matrix(
+        doc2vec_corpus, doc2vec_model._vocab_to_idx)
+    pmi_ww, _, _ = train_pmi(WW, py=doc2vec_model._py, beta=1, min_pmi=0)
+
+    n = pmi_ww.shape[0]
+    wvw = safe_sparse_dot(pmi_ww, w2v_transformer)
+    wvd = safe_sparse_dot(pmi_ww, d2v_transformer)
+
+    diff = np.zeros(n)
+    max_batch = math.ceil(n / batch_size)
+    for batch in range(max_batch):
+        b = batch * batch_size
+        e = min((batch + 1) * batch_size, n)
+        dist_w = pairwise_distances(wvw[b:e], wvw, metric='cosine')
+        dist_d = pairwise_distances(wvd[b:e], wvd, metric='cosine')
+        dist = abs(dist_w - dist_d)
+        dist.sort(axis=1)
+        dist = dist[:,-topk:].mean(axis=1)
+        diff[b:e] = dist
+
+        if verbose:
+            print('\rcomputing label influence %d / %d' % (batch+1, max_batch), end='')
+    if verbose:
+        print('\rcomputing label influence %d / %d done' % (max_batch, max_batch))
+
+    return diff
