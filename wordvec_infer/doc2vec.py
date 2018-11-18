@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+from .math import compute_embedding_difference
 from .math import fit_svd
 from .math import train_pmi
 from .vectorizer import dict_to_sparse
@@ -67,8 +68,8 @@ class Doc2Vec(Word2Vec):
             print('done')
 
         self._transformer_ = self._get_word2vec_transformer(WW)
-        self._label_influence = self._get_label_influence(
-            self._transformer, self._transformer_)
+        self._label_influence, self._diff = self._get_label_influence(
+            self._transformer, self._transformer_, pmi)
 
     def _make_label_word_matrix(self, doc2vec_corpus, vocab_to_idx):
         label_to_idx, DWd = label_word(doc2vec_corpus, vocab_to_idx)
@@ -98,9 +99,11 @@ class Doc2Vec(Word2Vec):
         _, transformer = self._get_repr_and_trans(pmi_ww)
         return transformer
 
-    def _get_label_influence(self, u, v):
-        # TODO
-        return None
+    def _get_label_influence(self, pmi_ww):
+        diff = compute_embedding_difference(
+            self._transformer_, self._transformer, pmi_ww)
+        influence = diff.mean()
+        return influence, diff
 
     def similar_docs(self, bow, topk=10):
         raise NotImplemented

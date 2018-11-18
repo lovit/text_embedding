@@ -1,8 +1,10 @@
 import numpy as np
+import math
 from scipy.sparse import diags
+from sklearn.metrics import pairwise_distances
 from sklearn.utils import check_random_state
 from sklearn.utils.extmath import randomized_svd
-
+from sklearn.utils.extmath import safe_sparse_dot
 
 def _as_diag(px, alpha):
     px_diag = diags(px.tolist()[0])
@@ -105,3 +107,29 @@ def fit_svd(X, n_components, n_iter=5, random_state=None):
         random_state = random_state)
 
     return U, Sigma, VT
+
+def compute_embedding_difference(w2v_transformer, d2v_transformer, pmi_ww,
+    batch_size=1000, topk=100, verbose=True):
+
+    n = pmi_ww.shape[0]
+    wvw = safe_sparse_dot(pmi_ww, w2v_transformer)
+    wvd = safe_sparse_dot(pmi_ww, d2v_transformer)
+
+    diff = np.zeros(n)
+    max_batch = math.ceil(n / batch_size)
+    for batch in range(max_batch):
+        b = batch * batch_size
+        e = min((batch + 1) * batch_size, n)
+        dist_w = pairwise_distances(wvw[b:e], wvw, metric='cosine')
+        dist_d = pairwise_distances(wvd[b:e], wvd, metric='cosine')
+        dist = abs(dist_w - dist_d)
+        dist.sort(axis=1)
+        dist = dist[:,-topk:].mean(axis=1)
+        diff[b:e] = dist
+
+        if verbose:
+            print('\rcomputing label influence %d / %d' % (batch+1, max_batch), end='')
+    if verbose:
+        print('\rcomputing label influence %d / %d done' % (max_batch, max_batch))
+
+    return diff
