@@ -94,7 +94,7 @@ class Doc2Vec(Word2Vec):
         return X
 
     def _get_word2vec_transformer(self, WW):
-        pmi_ww, _, _ = train_pmi(WW, beta=self._beta, min_pmi=0)
+        pmi_ww, _, _ = train_pmi(WW, py=self._py, beta=self._beta, min_pmi=0)
         _, transformer = self._get_repr_and_trans(pmi_ww)
         return transformer
 
@@ -105,7 +105,7 @@ class Doc2Vec(Word2Vec):
         return influence, diff
 
     def similar_docs_from_bow(self, bow, topk=10):
-        pmi_dw, _, _ = train_pmi(bow, beta=1, min_pmi=0)
+        pmi_dw, _, _ = train_pmi(bow, py=self._py, beta=1, min_pmi=0)
         y = safe_sparse_dot(pmi_dw, self._transformer)
         return self.similar_docs_from_vector(y, topk)
 
