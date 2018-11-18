@@ -2,6 +2,7 @@ import numpy as np
 import scipy as sp
 from sklearn.metrics import pairwise_distances
 from sklearn.utils.extmath import safe_sparse_dot
+from .keyword import proportion_keywords
 from .math import fit_svd
 from .math import train_pmi
 from .vectorizer import dict_to_sparse
@@ -133,6 +134,29 @@ class Doc2Vec(Word2Vec):
             idx_to_label = [label for label in
                 sorted(label_to_idx, key=lambda x:label_to_idx[x])]
             return y, idx_to_label
+
+def label_proportion_keywords(doc2vec_model, doc2vec_corpus):
+
+    doc2vec_corpus.yield_label = True
+    vocab_to_idx = doc2vec_model._vocab_to_idx
+    idx_to_vocab = doc2vec_model._idx_to_vocab
+
+    # get label - term matrix
+    DW, label_to_idx = doc2vec_model._make_label_word_matrix(
+        doc2vec_corpus, vocab_to_idx)
+    idx_to_label = [label for label in sorted(
+        label_to_idx, key=lambda x:label_to_idx[x])]
+
+    # train pmi
+    pmi, _, _ = train_pmi(DW, doc2vec_model._py, min_pmi=0)
+
+    # extract keywords
+    keywords = proportion_keywords(
+        DW.toarray(), pmi, index2word=idx_to_vocab)
+    keywords = [(label, keyword) for keyword, label
+        in zip(keywords, idx_to_label)]
+
+    return keywords
 
 def label_influence(doc2vec_model, doc2vec_corpus,
     batch_size=1000, topk=100, verbose=True):
