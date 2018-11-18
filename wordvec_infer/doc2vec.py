@@ -120,7 +120,7 @@ class Doc2Vec(Word2Vec):
             similars.append((similar_word, 1-dist[similar_idx]))
         return similars
 
-    def infer_docvec(self, doc2vec_corpus):
+    def infer_docvec_from_corpus(self, doc2vec_corpus):
         DW, label_to_idx = self._make_label_word_matrix(
             doc2vec_corpus, self._vocab_to_idx)
         return self.infer_docvec_from_vector(DW, label_to_idx)
