@@ -105,8 +105,20 @@ class Doc2Vec(Word2Vec):
         influence = diff.mean()
         return influence, diff
 
-    def similar_docs(self, bow, topk=10):
-        raise NotImplemented
+    def similar_docs_from_bow(self, bow, topk=10):
+        pmi_dw, _, _ = train_pmi(bow, beta=1, min_pmi=0)
+        y = safe_sparse_dot(pmi_dw, self._transformer)
+        return self.similar_docs_from_vector(y, topk)
+
+    def similar_docs_from_vector(self, vector, topk=10):
+        dist = pairwise_distances(vector, self.dv, metric='cosine')[0]
+        similars = []
+        for similar_idx in dist.argsort():
+            if len(similars) >= topk:
+                break
+            similar_word = self._idx_to_label[similar_idx]
+            similars.append((similar_word, 1-dist[similar_idx]))
+        return similars
 
     def infer_docvec(self, doc2vec_corpus):
         DW, label_to_idx = self._make_label_word_matrix(
