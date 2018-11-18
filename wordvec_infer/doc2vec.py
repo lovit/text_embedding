@@ -105,5 +105,17 @@ class Doc2Vec(Word2Vec):
     def similar_docs(self, bow, topk=10):
         raise NotImplemented
 
-    def infer_docvec(self, bow):
-        raise NotImplemented
+    def infer_docvec(self, doc2vec_corpus):
+        DW, label_to_idx = self._make_label_word_matrix(
+            doc2vec_corpus, self._vocab_to_idx)
+        return self.infer_docvec_from_vector(DW, label_to_idx)
+
+    def infer_docvec_from_vector(self, bow, label_to_idx=None):
+        y = self.infer_wordvec_from_vector(
+            bow, row_to_vocab=None, append=False)
+        if label_to_idx is None:
+            return y
+        else:
+            idx_to_label = [label for label in
+                sorted(label_to_idx, key=lambda x:label_to_idx[x])]
+            return y, idx_to_label
