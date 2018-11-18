@@ -1,5 +1,7 @@
 import numpy as np
 import scipy as sp
+from sklearn.metrics import pairwise_distances
+from sklearn.utils.extmath import safe_sparse_dot
 from .math import compute_embedding_difference
 from .math import fit_svd
 from .math import train_pmi
@@ -11,8 +13,9 @@ from .word2vec import Word2Vec
 class Doc2Vec(Word2Vec):
     def __init__(self, sentences=None, size=100, window=3, min_count=10,
         negative=10, alpha=0.0, beta=0.75, dynamic_weight=False,
-        verbose=True, n_iter=5):
+        verbose=True, n_iter=5, check_influence=False):
 
+        self._check_influence = check_influence
         super().__init__(sentences, size, window,
             min_count, negative, alpha, beta,
             dynamic_weight, verbose, n_iter)
@@ -68,8 +71,9 @@ class Doc2Vec(Word2Vec):
             print('done')
 
         self._transformer_ = self._get_word2vec_transformer(WW)
-        self._label_influence, self._diff = self._get_label_influence(
-            self._transformer, self._transformer_, pmi)
+        if self._check_influence:
+            self._label_influence, self._diff = compute_embedding_difference(
+                self._transformer, self._transformer_, pmi, verbose=self._verbose)
 
     def _make_label_word_matrix(self, doc2vec_corpus, vocab_to_idx):
         label_to_idx, DWd = label_word(doc2vec_corpus, vocab_to_idx)
