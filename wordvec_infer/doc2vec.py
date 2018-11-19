@@ -150,9 +150,15 @@ def label_proportion_keywords(doc2vec_model, doc2vec_corpus):
     # train pmi
     pmi, _, _ = train_pmi(DW, doc2vec_model._py, min_pmi=0)
 
+    # frequency weighted pmi
+    n_labels, n_terms = DW.shape
+    DW = DW.toarray()
+    pmi_ = np.zeros((n_labels, n_terms))
+    for i in range(n_labels):
+        pmi_[i] = safe_sparse_dot(pmi[i].reshape(-1), np.diag(DW[i]))
+
     # extract keywords
-    keywords = proportion_keywords(
-        DW.toarray(), pmi, index2word=idx_to_vocab)
+    keywords = proportion_keywords(pmi_, index2word=idx_to_vocab)
     keywords = [(label, keyword) for keyword, label
         in zip(keywords, idx_to_label)]
 
