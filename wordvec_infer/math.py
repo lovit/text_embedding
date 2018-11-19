@@ -13,7 +13,8 @@ def _as_diag(px, alpha):
 
 def _logarithm_and_ppmi(exp_pmi, min_exp_pmi):
     # because exp_pmi is sparse matrix and type of exp_pmi.data is numpy.ndarray
-    indices = np.where(exp_pmi.data > min_exp_pmi)[0]
+    indices = np.where(exp_pmi.data < min_exp_pmi)[0]
+    exp_pmi.data[indices] = 1
 
     # apply logarithm
     exp_pmi.data = np.log(exp_pmi.data)
