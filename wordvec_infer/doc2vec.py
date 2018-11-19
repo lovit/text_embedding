@@ -135,7 +135,7 @@ class Doc2Vec(Word2Vec):
                 sorted(label_to_idx, key=lambda x:label_to_idx[x])]
             return y, idx_to_label
 
-def label_proportion_keywords(doc2vec_model, doc2vec_corpus):
+def label_proportion_keywords(doc2vec_model, doc2vec_corpus, is_stopword=None):
 
     doc2vec_corpus.yield_label = True
     vocab_to_idx = doc2vec_model._vocab_to_idx
@@ -158,7 +158,8 @@ def label_proportion_keywords(doc2vec_model, doc2vec_corpus):
         pmi_[i] = safe_sparse_dot(pmi[i].reshape(-1), np.diag(DW[i]))
 
     # extract keywords
-    keywords = proportion_keywords(pmi_, index2word=idx_to_vocab)
+    keywords = proportion_keywords(pmi_,
+        index2word=idx_to_vocab, is_stopword=is_stopword)
     keywords = [(label, keyword) for keyword, label
         in zip(keywords, idx_to_label)]
 

@@ -1,7 +1,7 @@
 import numpy as np
 
 def proportion_keywords(S, min_score=0.5, topk=30,
-    candidates_topk=100, index2word=None):
+    candidates_topk=100, index2word=None, is_stopword=None):
 
     l1_normalize = lambda x:np.asarray(x/x.sum())
 
@@ -22,6 +22,9 @@ def proportion_keywords(S, min_score=0.5, topk=30,
 
     if index2word is not None:
         keywords = [[(index2word[idx], score) for idx, score in keyword] for keyword in keywords]
+
+    if is_stopword is not None:
+        keywords = [[(w,s) for w,s in keyword if not is_stopword(w)] for keyword in keywords]
 
     if topk > 0:
         keywords = [keyword[:topk] for keyword in keywords]
