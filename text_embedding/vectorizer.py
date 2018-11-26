@@ -4,12 +4,14 @@ from collections import defaultdict
 from .utils import get_process_memory
 
 
-def scan_vocabulary(sents, min_count):
+def scan_vocabulary(sents, min_count, verbose=False):
     """
     :param sents: list of list of str (like)
         utils.Word2VecCorpus
     :param min_count: int
         Minimum number of word frequency
+    :param verbose: Boolean
+        Print status if verbose is True
 
     It returns
     ----------
@@ -20,7 +22,9 @@ def scan_vocabulary(sents, min_count):
     """
 
     counter = defaultdict(int)
-    for sent in sents:
+    for i, sent in enumerate(sents):
+        if verbose and i % 10000 == 0:
+            print('\rscanning vocabulary from %d sents' % i, end='')
         for word in sent:
             counter[word] += 1
     counter = {word:count for word, count in counter.items()
@@ -28,6 +32,8 @@ def scan_vocabulary(sents, min_count):
     idx_to_vocab = [vocab for vocab in sorted(counter,
                     key=lambda x:-counter[x])]
     vocab_to_idx = {vocab:idx for idx, vocab in enumerate(idx_to_vocab)}
+    if verbose:
+        print('\rscanning vocabulary was done. %d terms from %d sents' % (len(idx_to_vocab), i+1))
     return vocab_to_idx, idx_to_vocab
 
 def dict_to_sparse(dd, row_to_idx, col_to_idx, n_rows=-1, n_cols=-1):

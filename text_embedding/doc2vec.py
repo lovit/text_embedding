@@ -71,7 +71,7 @@ class Doc2Vec(Word2Vec):
 
         doc2vec_corpus.yield_label = False
         self._vocab_to_idx, self._idx_to_vocab = scan_vocabulary(
-            doc2vec_corpus, min_count=self._min_count)
+            doc2vec_corpus, min_count=self._min_count, verbose=self._verbose)
         self._vocab_to_idx_ = dict(self._vocab_to_idx.items())
 
         WW = self._make_word_context_matrix(
