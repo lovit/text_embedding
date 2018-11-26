@@ -141,12 +141,10 @@ def word_context(sents, vocab_to_idx, windows=3, min_count=1,
     return dd
 
 def _prune(dd, min_count):
-    dd_ = defaultdict(lambda: defaultdict(int))
-    for k1, d in dd.items():
-        d_ = defaultdict(int, {k2:v for k2, v in d.items() if v >= min_count})
-        if len(d_) > 0:
-            dd_[k1] = d_
-    return dd_
+    dd = {k1:defaultdict(int, {k2:v for k2, v in d.items() if v >= min_count})
+          for k1, d in dd.items()}
+    dd = {k:v for k,v in dd.items() if len(v) > 0}
+    return defaultdict(lambda: defaultdict(int), dd)
 
 def label_word(labeled_corpus, vocab_to_idx, verbose=True):
     """
