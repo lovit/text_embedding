@@ -12,7 +12,7 @@ class Word2Vec:
 
     def __init__(self, sentences=None, size=100, window=3, min_count=10,
         negative=10, alpha=0.0, beta=0.75, dynamic_weight=False,
-        verbose=True, n_iter=5):
+        verbose=True, n_iter=5, min_cooccurrence=5, prune_point=500000):
 
         """
         :param sentences: list of list of str (like)
@@ -45,6 +45,10 @@ class Word2Vec:
         :param n_iter: int
             Number of SVD iteration.
             Default is 5
+        :param min_cooccurrence: int
+            Minimum number of co-occurrence count
+        :param prune_point: int
+            Number of sents to prune with min_count
         """
 
         # user defined parameters
@@ -57,6 +61,8 @@ class Word2Vec:
         self._dynamic_weight = dynamic_weight
         self._verbose = verbose
         self._n_iter = n_iter
+        self._min_cooccurrence = min_cooccurrence
+        self._prune_point = prune_point
 
         # trained attributes
         self.wv = None # word vector
@@ -113,9 +119,12 @@ class Word2Vec:
         WWd = word_context(
             sents = word2vec_corpus,
             windows = self._window,
+            min_count = self._min_cooccurrence,
             dynamic_weight = self._dynamic_weight,
             verbose = self._verbose,
-            vocab_to_idx = vocab_to_idx)
+            vocab_to_idx = vocab_to_idx,
+            prune_point = self._prune_point
+        )
 
         WW = dict_to_sparse(
             dd = WWd,

@@ -13,11 +13,11 @@ from .word2vec import Word2Vec
 class Doc2Vec(Word2Vec):
     def __init__(self, sentences=None, size=100, window=3, min_count=10,
         negative=10, alpha=0.0, beta=0.75, dynamic_weight=False,
-        verbose=True, n_iter=5):
+        verbose=True, n_iter=5, min_cooccurrence=5, prune_point=500000):
 
         super().__init__(sentences, size, window,
-            min_count, negative, alpha, beta,
-            dynamic_weight, verbose, n_iter)
+            min_count, negative, alpha, beta, dynamic_weight,
+            verbose, n_iter, min_cooccurrence, prune_point)
 
     def train(self, doc2vec_corpus):
         """

@@ -65,8 +65,8 @@ def dict_to_sparse(dd, row_to_idx, col_to_idx, n_rows=-1, n_cols=-1):
     X = sp.sparse.csr_matrix((data, (rows, cols)), shape=(n_rows, n_cols))
     return X
 
-def word_context(sents, vocab_to_idx, windows=3,
-    dynamic_weight=True, verbose=True, row_vocabs=None):
+def word_context(sents, vocab_to_idx, windows=3, min_count=1,
+    dynamic_weight=True, verbose=True, row_vocabs=None, prune_point=500000):
     """
     :param sents: list of list of str (like)
         utils.Word2VecCorpus
@@ -74,6 +74,8 @@ def word_context(sents, vocab_to_idx, windows=3,
         vocabulary to index mapper
     :param windows: int
         Size of context range. default is 3
+    :param min_count: int
+        Minimum number of co-occurrence count
     :param dynamic_weight: Boolean
         If True, the weight is [1, ..., 1/window] such as [1, 2/3, 1/3]
         Default is True
@@ -82,6 +84,8 @@ def word_context(sents, vocab_to_idx, windows=3,
         Deefault is True
     :param row_vocabs: dict or set
         Row words. Default is all words in vocab_to_idx
+    :param prune_point: int
+        Number of sents to prune with min_count
 
     It returns
     ----------
@@ -100,6 +104,8 @@ def word_context(sents, vocab_to_idx, windows=3,
 
     dd = defaultdict(lambda: defaultdict(int))
     for i_sent, words in enumerate(sents):
+        if min_count > 1 and i_sent % prune_point == 0:
+            dd = _prune(dd, min_count)
         if verbose and i_sent % 1000 == 0:
             print('\r(word, context) from {} sents ({:.3f} Gb)'.format(
                 i_sent, get_process_memory()), end='')
@@ -127,6 +133,14 @@ def word_context(sents, vocab_to_idx, windows=3,
         print('\r(word, context) was constructed from {} sents ({} words, {:.3f} Gb)'.format(
             i_sent, len(vocab_to_idx), get_process_memory()))
     return dd
+
+def _prune(dd, min_count):
+    dd_ = defaultdict(lambda: defaultdict(int))
+    for k1, d in dd.items():
+        d_ = defaultdict(int, {k2:v for k2, v in d.items() if v >= min_count})
+        if len(d_) > 0:
+            dd_[k1] = d_
+    return dd_
 
 def label_word(labeled_corpus, vocab_to_idx, verbose=True):
     """
