@@ -23,7 +23,7 @@ def scan_vocabulary(sents, min_count, verbose=False):
 
     counter = defaultdict(int)
     for i, sent in enumerate(sents):
-        if verbose and i % 10000 == 0:
+        if verbose and i % 100000 == 0:
             print('\rscanning vocabulary from %d sents' % i, end='')
         for word in sent:
             counter[word] += 1
