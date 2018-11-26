@@ -70,7 +70,7 @@ class Doc2Vec(Word2Vec):
             raise ValueError('Input argument format is incorrect')
 
         doc2vec_corpus.yield_label = False
-        self._vocab_to_idx, self._idx_to_vocab = scan_vocabulary(
+        self._vocab_to_idx, self._idx_to_vocab, self._idx_to_count = scan_vocabulary(
             doc2vec_corpus, min_count=self._min_count, verbose=self._verbose)
         self._vocab_to_idx_ = dict(self._vocab_to_idx.items())
 

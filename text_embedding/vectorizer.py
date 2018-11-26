@@ -19,6 +19,8 @@ def scan_vocabulary(sents, min_count, verbose=False):
         vocabulary to index mapper
     idx_to_vocab: list of str
         vocabluary list
+    idx_to_count: list of int
+        count of vocabulary
     """
 
     counter = defaultdict(int)
@@ -32,9 +34,10 @@ def scan_vocabulary(sents, min_count, verbose=False):
     idx_to_vocab = [vocab for vocab in sorted(counter,
                     key=lambda x:-counter[x])]
     vocab_to_idx = {vocab:idx for idx, vocab in enumerate(idx_to_vocab)}
+    idx_to_count = [counter[vocab] for vocab in idx_to_vocab]
     if verbose:
         print('\rscanning vocabulary was done. %d terms from %d sents' % (len(idx_to_vocab), i+1))
-    return vocab_to_idx, idx_to_vocab
+    return vocab_to_idx, idx_to_vocab, idx_to_count
 
 def dict_to_sparse(dd, row_to_idx, col_to_idx, n_rows=-1, n_cols=-1):
     """

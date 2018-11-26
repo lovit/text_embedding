@@ -68,6 +68,7 @@ class Word2Vec:
         self._vocab_to_idx = None
         self._vocab_to_idx_ = None # include appended words
         self._idx_to_vocab = None
+        self._idx_to_count = None
         self._py = None
         self._transformer = None
         self.n_vocabs = 0
@@ -88,7 +89,7 @@ class Word2Vec:
         if self.is_trained:
             raise ValueError('Word2Vec model already trained')
 
-        self._vocab_to_idx, self._idx_to_vocab = scan_vocabulary(
+        self._vocab_to_idx, self._idx_to_vocab, self._idx_to_count = scan_vocabulary(
             word2vec_corpus, min_count=self._min_count, verbose=self._verbose)
         self._vocab_to_idx_ = dict(self._vocab_to_idx.items())
 
