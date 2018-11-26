@@ -14,8 +14,8 @@ Levy and Goldberg (2014) 는 ^2 에서 SGNS 는 (word, context) matrix 에 Shift
 2016-10-20 의 뉴스 기사에 대한 실험입니다. sentences 는 3 만여건의 뉴스기사 입니다. Input 은 list of str (like) 형식이면 모두 이용가능합니다.
 
 ```python
-from wordvec_infer import Word2VecCorpus
-from wordvec_infer import Word2Vec
+from text_embedding import Word2VecCorpus
+from text_embedding import Word2Vec
 
 corpus_path = '2016-10-20-news_noun'
 word2vec_corpus = Word2VecCorpus(corpus_path)
