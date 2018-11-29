@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.metrics import pairwise_distances
 from sklearn.utils.extmath import safe_sparse_dot
 from .math import train_pmi
-from .math import fit_svd
+from .math import train_svd
 from .vectorizer import dict_to_sparse
 from .vectorizer import scan_vocabulary
 from .vectorizer import word_context
@@ -103,7 +103,7 @@ class Word2Vec:
             print('done')
 
     def _get_repr_and_trans(self, X):
-        U, S, VT = fit_svd(X, n_components=self._size, n_iter=self._n_iter)
+        U, S, VT = train_svd(X, n_components=self._size, n_iter=self._n_iter)
         S_ = S ** (0.5)
         representation = U * S_
         transformer = VT.T * (S_ ** (-1))

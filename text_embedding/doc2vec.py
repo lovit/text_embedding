@@ -3,7 +3,6 @@ import scipy as sp
 from sklearn.metrics import pairwise_distances
 from sklearn.utils.extmath import safe_sparse_dot
 from .keyword import proportion_keywords
-from .math import fit_svd
 from .math import train_pmi
 from .vectorizer import dict_to_sparse
 from .vectorizer import label_word
