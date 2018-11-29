@@ -9,43 +9,46 @@ from .vectorizer import word_context
 
 
 class Word2Vec:
+    """
+    :param sentences: list of list of str (like)
+        Iterable of iterables, optional
+        A sentence is represented with list of str.
+    :param size: int. passed to :py:func:`sklearn.decomposition.TruncatedSVD`.
+        Word vector dimension
+        Default is 100
+    :param window: int
+        The number of context words is 2 x window
+        Default is 3
+    :param min_count: int
+        Minumum frequency of words
+        Default is 10
+    :param negative: int. passed to :py:func:`.pmi`.
+        Number of negative samples. Minimum PMI is automatically
+        defined with this value; log(negative)
+        Default is 10
+    :param alpha: float. passed to :py:func:`.pmi`.
+        Nonnegative, PMI smoothing factor
+        Default is 0.0
+    :param beta: float. passed to :py:func:`.pmi`.
+        0 < beta <= 1, PMI smoothing factor.
+        PMI_xy = log( Pxy / (Px x Py^beta) )
+        Default is 0.75
+    :param dynamic_weight: Boolean. passed to :py:func:`.vectorizer`.
+        Use dynamic weight such as [1/3, 2/3, 3/3] for windows = 3 if True
+    :param verbose: Boolean
+        Verbose mode if True
+    :param n_iter: int
+        Number of SVD iteration.
+        Default is 5
+    :param min_cooccurrence: int
+        Minimum number of co-occurrence count
+    :param prune_point: int
+        Number of sents to prune with min_count
+    """
 
     def __init__(self, sentences=None, size=100, window=3, min_count=10,
         negative=10, alpha=0.0, beta=0.75, dynamic_weight=False,
-        verbose=True, n_iter=5):
-
-        """
-        :param sentences: list of list of str (like)
-            Iterable of iterables, optional
-            A sentence is represented with list of str.
-        :param size: int. passed to :py:func:`sklearn.decomposition.TruncatedSVD`.
-            Word vector dimension
-            Default is 100
-        :param window: int
-            The number of context words is 2 x window
-            Default is 3
-        :param min_count: int
-            Minumum frequency of words
-            Default is 10
-        :param negative: int. passed to :py:func:`.pmi`.
-            Number of negative samples. Minimum PMI is automatically
-            defined with this value; log(negative)
-            Default is 10
-        :param alpha: float. passed to :py:func:`.pmi`.
-            Nonnegative, PMI smoothing factor
-            Default is 0.0
-        :param beta: float. passed to :py:func:`.pmi`.
-            0 < beta <= 1, PMI smoothing factor.
-            PMI_xy = log( Pxy / (Px x Py^beta) )
-            Default is 0.75
-        :param dynamic_weight: Boolean. passed to :py:func:`.vectorizer`.
-            Use dynamic weight such as [1/3, 2/3, 3/3] for windows = 3 if True
-        :param verbose: Boolean
-            Verbose mode if True
-        :param n_iter: int
-            Number of SVD iteration.
-            Default is 5
-        """
+        verbose=True, n_iter=5, min_cooccurrence=5, prune_point=500000):
 
         # user defined parameters
         self._size = size
@@ -57,12 +60,15 @@ class Word2Vec:
         self._dynamic_weight = dynamic_weight
         self._verbose = verbose
         self._n_iter = n_iter
+        self._min_cooccurrence = min_cooccurrence
+        self._prune_point = prune_point
 
         # trained attributes
         self.wv = None # word vector
         self._vocab_to_idx = None
         self._vocab_to_idx_ = None # include appended words
         self._idx_to_vocab = None
+        self._idx_to_count = None
         self._py = None
         self._transformer = None
         self.n_vocabs = 0
@@ -83,8 +89,8 @@ class Word2Vec:
         if self.is_trained:
             raise ValueError('Word2Vec model already trained')
 
-        self._vocab_to_idx, self._idx_to_vocab = scan_vocabulary(
-            word2vec_corpus, min_count=self._min_count)
+        self._vocab_to_idx, self._idx_to_vocab, self._idx_to_count = scan_vocabulary(
+            word2vec_corpus, min_count=self._min_count, verbose=self._verbose)
         self._vocab_to_idx_ = dict(self._vocab_to_idx.items())
 
         WW = self._make_word_context_matrix(
@@ -113,9 +119,12 @@ class Word2Vec:
         WWd = word_context(
             sents = word2vec_corpus,
             windows = self._window,
+            min_count = self._min_cooccurrence,
             dynamic_weight = self._dynamic_weight,
             verbose = self._verbose,
-            vocab_to_idx = vocab_to_idx)
+            vocab_to_idx = vocab_to_idx,
+            prune_point = self._prune_point
+        )
 
         WW = dict_to_sparse(
             dd = WWd,

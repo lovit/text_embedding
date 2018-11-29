@@ -10,13 +10,50 @@ from .vectorizer import scan_vocabulary
 from .word2vec import Word2Vec
 
 class Doc2Vec(Word2Vec):
+    """
+    :param sentences: list of list of str (like)
+        Iterable of iterables, optional
+        A sentence is represented with list of str.
+    :param size: int. passed to :py:func:`sklearn.decomposition.TruncatedSVD`.
+        Word vector dimension
+        Default is 100
+    :param window: int
+        The number of context words is 2 x window
+        Default is 3
+    :param min_count: int
+        Minumum frequency of words
+        Default is 10
+    :param negative: int. passed to :py:func:`.pmi`.
+        Number of negative samples. Minimum PMI is automatically
+        defined with this value; log(negative)
+        Default is 10
+    :param alpha: float. passed to :py:func:`.pmi`.
+        Nonnegative, PMI smoothing factor
+        Default is 0.0
+    :param beta: float. passed to :py:func:`.pmi`.
+        0 < beta <= 1, PMI smoothing factor.
+        PMI_xy = log( Pxy / (Px x Py^beta) )
+        Default is 0.75
+    :param dynamic_weight: Boolean. passed to :py:func:`.vectorizer`.
+        Use dynamic weight such as [1/3, 2/3, 3/3] for windows = 3 if True
+    :param verbose: Boolean
+        Verbose mode if True
+    :param n_iter: int
+        Number of SVD iteration.
+        Default is 5
+    :param min_cooccurrence: int
+        Minimum number of co-occurrence count
+    :param prune_point: int
+        Number of sents to prune with min_count
+    """
+
     def __init__(self, sentences=None, size=100, window=3, min_count=10,
         negative=10, alpha=0.0, beta=0.75, dynamic_weight=False,
-        verbose=True, n_iter=5):
+        verbose=True, n_iter=5, min_cooccurrence=5, prune_point=500000):
 
         super().__init__(sentences, size, window,
-            min_count, negative, alpha, beta,
-            dynamic_weight, verbose, n_iter)
+            min_count, negative, alpha, beta, dynamic_weight,
+            verbose, n_iter, min_cooccurrence, prune_point)
 
     def train(self, doc2vec_corpus):
         """
@@ -32,8 +69,8 @@ class Doc2Vec(Word2Vec):
             raise ValueError('Input argument format is incorrect')
 
         doc2vec_corpus.yield_label = False
-        self._vocab_to_idx, self._idx_to_vocab = scan_vocabulary(
-            doc2vec_corpus, min_count=self._min_count)
+        self._vocab_to_idx, self._idx_to_vocab, self._idx_to_count = scan_vocabulary(
+            doc2vec_corpus, min_count=self._min_count, verbose=self._verbose)
         self._vocab_to_idx_ = dict(self._vocab_to_idx.items())
 
         WW = self._make_word_context_matrix(

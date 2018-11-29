@@ -14,16 +14,19 @@ def check_dirs(filepath):
         print('created {}'.format(dirname))
 
 class Word2VecCorpus:
-    def __init__(self, path, num_doc=-1, verbose_point=-1):
+    def __init__(self, path, num_doc=-1, verbose_point=-1, lowercase=True):
         self.path = path
         self.num_doc = num_doc
         self.verbose_point = verbose_point
+        self.lowercase = lowercase
         self._len = 0
 
     def __iter__(self):
         vp = self.verbose_point
         with open(self.path, encoding='utf-8') as f:
             for i, doc in enumerate(f):
+                if self.lowercase:
+                    doc = doc.lower()
                 if vp > 0 and i % vp == 0:
                     print('\riterating corpus ... %d lines' % (i+1), end='', flush=True)
                 if self.num_doc > 0 and i >= self.num_doc:
@@ -50,8 +53,8 @@ class Word2VecCorpus:
         return self._len
 
 class Doc2VecCorpus(Word2VecCorpus):
-    def __init__(self, path, num_doc=-1, verbose_point=-1, yield_label=True):
-        super().__init__(path, num_doc, verbose_point)
+    def __init__(self, path, num_doc=-1, verbose_point=-1, lowercase=True, yield_label=True):
+        super().__init__(path, num_doc, verbose_point, lowercase)
         self.yield_label = yield_label
 
     def _tokenize(self, i, doc):
