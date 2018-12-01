@@ -1,3 +1,5 @@
+__version__ = '0.0.1'
+
 from .doc2vec import Doc2Vec
 from .math import train_svd
 from .math import train_pmi

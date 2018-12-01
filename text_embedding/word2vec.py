@@ -50,6 +50,8 @@ class Word2Vec:
         negative=10, alpha=0.0, beta=0.75, dynamic_weight=False,
         verbose=True, n_iter=5, min_cooccurrence=5, prune_point=500000):
 
+        assert 0 < beta
+
         # user defined parameters
         self._size = size
         self._window = window
