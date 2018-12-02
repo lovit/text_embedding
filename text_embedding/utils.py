@@ -14,11 +14,12 @@ def check_dirs(filepath):
         print('created {}'.format(dirname))
 
 class Word2VecCorpus:
-    def __init__(self, path, num_doc=-1, verbose_point=-1, lowercase=True):
+    def __init__(self, path, num_doc=-1, verbose_point=-1, lowercase=True, sent_delimiter='\n'):
         self.path = path
         self.num_doc = num_doc
         self.verbose_point = verbose_point
         self.lowercase = lowercase
+        self.sent_delimiter = sent_delimiter
         self._len = 0
 
     def __iter__(self):
@@ -42,7 +43,7 @@ class Word2VecCorpus:
             self._len = i + 1
 
     def _tokenize(self, i, doc):
-        return [sent.split() for sent in doc.split('  ') if sent]
+        return [sent.split() for sent in doc.split(self.sent_delimiter) if sent]
 
     def __len__(self):
         if self._len == 0:
@@ -53,19 +54,21 @@ class Word2VecCorpus:
         return self._len
 
 class Doc2VecCorpus(Word2VecCorpus):
-    def __init__(self, path, num_doc=-1, verbose_point=-1, lowercase=True, yield_label=True):
-        super().__init__(path, num_doc, verbose_point, lowercase)
+    def __init__(self, path, num_doc=-1, verbose_point=-1, lowercase=True, yield_label=True, sent_delimiter='\n'):
+        super().__init__(path, num_doc, verbose_point, lowercase, sent_delimiter)
         self.yield_label = yield_label
 
     def _tokenize(self, i, doc):
         column = doc.split('\t')
         if len(column) == 1:
             labels = ['__doc{}__'.format(i)]
-            words = column[0].split()
+            sents = column[0].split(self.sent_delimiter)
         else:
             labels = column[0].split()
-            words = [word for col in column[1:] for word in col.split()]
+            sents = []
+            for col in column[1:]:
+                sents += col.split(self.sent_delimiter)
         if self.yield_label:
-            return ((labels, words), )
+            return [(labels, tuple(sent.split())) for sent in sents if sent]
         else:
-            return (words, )
+            return [tuple(sent.split()) for sent in sents if sent]
