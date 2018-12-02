@@ -72,3 +72,20 @@ class Doc2VecCorpus(Word2VecCorpus):
             return [(labels, tuple(sent.split())) for sent in sents if sent]
         else:
             return [tuple(sent.split()) for sent in sents if sent]
+
+class WordVectorInferenceDecorator:
+    def __init__(self, corpus, test_terms, training=True):
+        self.corpus = corpus
+        self.test_terms = test_terms
+        self.training = training
+
+    def __iter__(self):
+        for sent in self.corpus:
+            if self.training != self._sent_has_term(sent):
+                yield sent
+
+    def _sent_has_term(self, sent):
+        for term in sent:
+            if term in self.test_terms:
+                return True
+        return False

@@ -7,6 +7,7 @@ from .utils import get_process_memory
 from .utils import check_dirs
 from .utils import Word2VecCorpus
 from .utils import Doc2VecCorpus
+from .utils import WordVectorInferenceDecorator
 from .vectorizer import scan_vocabulary
 from .vectorizer import dict_to_sparse
 from .vectorizer import word_context
