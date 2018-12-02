@@ -140,7 +140,7 @@ def word_context(sents, vocab_to_idx, windows=3, min_count=1,
 
     if verbose:
         print('\r(word, context) was constructed from {} sents ({} words, {:.3f} Gb)'.format(
-            i_sent, len(vocab_to_idx), get_process_memory()))
+            i_sent, len(row_vocabs), get_process_memory()))
     return dd
 
 def _prune(dd, min_count):

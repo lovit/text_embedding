@@ -47,8 +47,6 @@ def train_pmi(X, py=None, min_pmi=0, alpha=0.0, beta=1):
         Probability of columns (features)
     """
 
-    assert 0 < beta <= 1
-
     # convert x to probability matrix & marginal probability 
     px = np.asarray((X.sum(axis=1) / X.sum()).reshape(-1))
     if py is None:
@@ -71,7 +69,7 @@ def train_pmi(X, py=None, min_pmi=0, alpha=0.0, beta=1):
 
     return pmi, px, py
 
-def fit_svd(X, n_components, n_iter=5, random_state=None):
+def train_svd(X, n_components, n_iter=5, random_state=None):
     """
     :param X: scipy.sparse.csr_matrix
         Input matrix

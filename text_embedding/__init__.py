@@ -1,5 +1,7 @@
+__version__ = '0.0.1'
+
 from .doc2vec import Doc2Vec
-from .math import fit_svd
+from .math import train_svd
 from .math import train_pmi
 from .utils import get_process_memory
 from .utils import check_dirs
