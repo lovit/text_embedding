@@ -99,7 +99,7 @@ class Word2Vec:
             word2vec_corpus, self._vocab_to_idx)
 
         pmi_ww, px, self._py = train_pmi(
-            WW, beta = self._beta, min_pmi = np.log(max(1, self.negative))
+            WW, beta = self._beta, min_pmi = np.log(max(1, self.negative)))
 
         if self._verbose:
             print('train SVD ... ', end='')
