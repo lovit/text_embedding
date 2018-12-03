@@ -98,8 +98,10 @@ class Word2Vec:
         WW = self._make_word_context_matrix(
             word2vec_corpus, self._vocab_to_idx)
 
-        pmi_ww, px, self._py = train_pmi(
-            WW, beta = self._beta, min_pmi = np.log(max(1, self._negative)))
+        py = np.asarray(self._idx_to_count)
+
+        pmi_ww, _, self._py = train_pmi(WW, beta = self._beta,
+            py = py, min_pmi = np.log(max(1, self._negative)))
 
         if self._verbose:
             print('train SVD ... ', end='')

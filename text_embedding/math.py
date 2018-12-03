@@ -7,7 +7,10 @@ from sklearn.utils.extmath import randomized_svd
 from sklearn.utils.extmath import safe_sparse_dot
 
 def _as_diag(px, alpha):
-    px_diag = diags(px.tolist()[0])
+    if len(px.shape) == 1:
+        px_diag = diags(px.tolist())
+    else:
+        px_diag = diags(px.tolist()[0])
     px_diag.data[0] = np.asarray([0 if v == 0 else 1 / (v + alpha) for v in px_diag.data[0]])
     return px_diag
 
