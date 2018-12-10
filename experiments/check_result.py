@@ -22,6 +22,9 @@ def main():
         idx_to_vocab = [word.strip() for word in f if word.strip()]
     vocab_to_idx = {vocab:idx for idx, vocab in enumerate(idx_to_vocab)}
 
+    if debug:
+        wordlists = wordlists[:3]
+
     for path in wordlists:
         name = path.split('/')[-1][:-4]
         with open(path, encoding='utf-8') as f:
