@@ -73,6 +73,9 @@ def main():
     with open('%s/full_vocablist.txt' % result_directory, 'w', encoding='utf-8') as f:
         for vocab in idx_to_vocab:
             f.write('%s\n'%vocab)
+    with open('%s/full_vocabcount.txt' % result_directory, 'w', encoding='utf-8') as f:
+        for count in idx_to_count:
+            f.write('{}\n'.format(count))
 
     # train inference
     for i, path in enumerate(wordlists):
