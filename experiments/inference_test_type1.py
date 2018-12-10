@@ -70,7 +70,7 @@ def main():
         dynamic_weight, beta, negative, size, n_iter)
     np.savetxt('%s/full_wv.txt' % result_directory, wv)
     mmwrite('%s/full_WW.mtx' % result_directory, WW)
-    with open('%s/full_vocablist.txt' % result_directory, 'w', encoding='utf-8') as f:
+    with open('%s/full_vocab.txt' % result_directory, 'w', encoding='utf-8') as f:
         for vocab in idx_to_vocab:
             f.write('%s\n'%vocab)
     with open('%s/full_vocabcount.txt' % result_directory, 'w', encoding='utf-8') as f:
