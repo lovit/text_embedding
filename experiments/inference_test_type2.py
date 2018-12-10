@@ -79,7 +79,7 @@ def main():
             verbose=verbose, n_iter=n_iter, min_cooccurrence=min_cooccurrence, prune_point=300000)
         # inference
         inference_corpus.training = False
-        infered_vec = word2vec.infer_wordvec(inference_corpus, test_terms, append=True)
+        infered_vec = word2vec.infer_wordvec(inference_corpus, wordset, append=True)
         # save model
         save_model(word2vec, result_directory, exp_name)
 
@@ -92,3 +92,6 @@ def save_model(model, directory, header):
     with open(vocab_path, 'w', encoding='utf-8') as f:
         for vocab in model._idx_to_vocab:
             f.write('%s\n' % vocab)
+
+if __name__ == '__main__':
+    main()
