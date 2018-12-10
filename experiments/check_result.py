@@ -30,7 +30,7 @@ def main():
         with open(path, encoding='utf-8') as f:
             wordset = [word.strip() for word in f][:3]
         wv_infer = np.loadtxt('%s/%s_wv.txt' % (result_directory, name))
-        print('\\nnExperiment %s' % name)
+        print('\n\nExperiment %s' % name)
         for word in wordset:
             compare(word, vocab_to_idx, idx_to_vocab, wv_full, wv_infer)
             print('-' * 50)
