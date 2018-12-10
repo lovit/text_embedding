@@ -1,6 +1,8 @@
 import argparse
+import copy
 import glob
 import numpy as np
+import os
 from utils import similar_words
 
 def main():
@@ -18,7 +20,7 @@ def main():
     print('num of inference wordset = %d' % len(wordlists))
 
     wv_full = np.loadtxt('%s/full_wv.txt' % result_directory)
-    with open('%s/full_vocablist.txt' % result_directory, encoding='utf-8') as f:
+    with open('%s/full_vocab.txt' % result_directory, encoding='utf-8') as f:
         idx_to_vocab = [word.strip() for word in f if word.strip()]
     vocab_to_idx = {vocab:idx for idx, vocab in enumerate(idx_to_vocab)}
 
@@ -30,10 +32,25 @@ def main():
         with open(path, encoding='utf-8') as f:
             wordset = [word.strip() for word in f][:3]
         wv_infer = np.loadtxt('%s/%s_wv.txt' % (result_directory, name))
+        if os.path.exists('%s/%s_vocab.txt' % (result_directory, name)):
+            vocab_to_idx_, idx_to_vocab_, wv_base, = remain_only_common_vocabs(
+                wv_full, vocab_to_idx, '%s/%s_vocab.txt' % (result_directory, name))
+        else:
+            wv_base = wv_full.copy()
+            vocab_to_idx_ = copy.deepcopy(vocab_to_idx)
+            idx_to_vocab_ = copy.deepcopy(idx_to_vocab)
         print('\n\nExperiment %s' % name)
         for word in wordset:
-            compare(word, vocab_to_idx, idx_to_vocab, wv_full, wv_infer)
+            compare(word, vocab_to_idx_, idx_to_vocab_, wv_base, wv_infer)
             print('-' * 50)
+
+def remain_only_common_vocabs(wv_full, vocab_to_idx_full, vocab_path_infer):
+    with open(vocab_path_infer, encoding='utf-8') as f:
+        idx_to_vocab = [vocab.strip() for vocab in f if vocab.strip()]
+    vocab_to_idx = {vocab:idx for idx, vocab in enumerate(idx_to_vocab)}
+    full_idxs = np.asarray([vocab_to_idx_full[vocab] for vocab in idx_to_vocab])
+    wv_base = wv_full[full_idxs]
+    return vocab_to_idx, idx_to_vocab, wv_base
 
 def compare(word, vocab_to_idx, idx_to_vocab, wv_full, wv_infer, topk=10):
     similars_full = similar_words(word, vocab_to_idx, idx_to_vocab, wv_full, topk)
