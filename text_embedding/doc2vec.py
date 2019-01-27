@@ -98,9 +98,10 @@ class Doc2Vec(Word2Vec):
         representation, transformer = self._get_repr_and_trans(pmi)
 
         self.wv = representation[:n_vocab]
-        self.dv = representation[n_vocab:]
+        #self.dv = representation[n_vocab:]
         self._transformer = transformer[:n_vocab]
         self.n_vocabs = n_vocab
+        self.dv = self.infer_docvec_from_vector(DW)
 
         if self._verbose:
             print('done')
