@@ -161,7 +161,7 @@ class Doc2Vec(Word2Vec):
             doc2vec_corpus, self._vocab_to_idx)
         return self.infer_docvec_from_vector(DW, label_to_idx)
 
-    def infer_docvec_from_bow(self, bow, label_to_idx=None):
+    def infer_docvec_from_vector(self, bow, label_to_idx=None):
         y = self.infer_wordvec_from_vector(
             bow, row_to_vocab=None, append=False)
         if label_to_idx is None:
