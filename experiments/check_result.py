@@ -34,10 +34,10 @@ def main():
     for path in wordlists:
         name = path.split('/')[-1][:-4]
         with open(path, encoding='utf-8') as f:
-            wordset = [word.strip() for word in f]
-            wordset = [word for word in wordset if word in vocab_to_idx]
-            wordset = sorted(wordset, key=lambda w:-count(w))[:1000]
-            wordset = np.random.permutation(wordset).tolist()[:10]
+            queryset = [word.strip() for word in f]
+            queryset = [word for word in queryset if word in vocab_to_idx]
+            queryset = sorted(queryset, key=lambda w:-count(w))[:1000]
+            queryset = np.random.permutation(queryset).tolist()[:10]
         wv_infer = np.loadtxt('%s/%s_wv.txt' % (result_directory, name))
         if os.path.exists('%s/%s_vocab.txt' % (result_directory, name)):
             vocab_to_idx_, idx_to_vocab_, wv_base, = remain_only_common_vocabs(
@@ -47,8 +47,8 @@ def main():
             vocab_to_idx_ = copy.deepcopy(vocab_to_idx)
             idx_to_vocab_ = copy.deepcopy(idx_to_vocab)
         print('\n\nExperiment %s' % name)
-        for word in wordset:
-            compare(word, vocab_to_idx_, idx_to_vocab_, wv_base, wv_infer, count)
+        for query in queryset:
+            compare(query, vocab_to_idx_, idx_to_vocab_, wv_base, wv_infer, count)
             print('-' * 50)
 
 def remain_only_common_vocabs(wv_full, vocab_to_idx_full, vocab_path_infer):
