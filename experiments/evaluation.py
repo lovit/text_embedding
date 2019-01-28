@@ -28,13 +28,34 @@ def load_partial_model(directory, header):
     wv = load_model(vec_path)
     return wv, idx_to_vocab, vocab_to_idx
 
-def _most_similar(query_idxs, X, topk=10):
+def most_similar(query_idxs, X, topk, batch_size=100):
+    n_queries = query_idxs.shape[0]
+    n_batch = math.ceil(n_queries / batch_size)
+    idxs = []
+    sims = []
+    for i_batch in range(n_batch):
+        b = i_batch * batch_size
+        e = min(n_queries, (i_batch + 1) * batch_size)
+        query_idxs_ = query_idxs[b:e]
+        idxs_, sims_ = _most_similar(query_idxs_, X, topk)
+        idxs.append(idxs_)
+        sims.append(sims_)
+        print('\rsimilarity computation {} / {} batch ... '.format(i_batch + 1, n_batch), end='')
+    print('\rsimilarity computation {0} / {0} batch was done'.format(n_batch))
+
+    idxs = np.vstack(idxs)
+    sims = np.vstack(sims)
+    return idxs, sims
+
+def _most_similar(query_idxs, X, topk):
     query_vec = X[query_idxs]
     dist = pairwise_distances(query_vec, X, metric='cosine')
+    dist_ = dist.copy()
+    dist_.sort(axis=1)
     similar_idx = dist.argsort(axis=1)
-    similar_idx = similar_idx[:,:topk+1]
-    print(similar_idx.shape)
-    return similar_idx
+    similar_idx = similar_idx[:,1:topk+1]
+    similarity = 1 - dist_[:,1:topk+1]
+    return similar_idx, similarity
 
 def compare(wv, wv_, vocab_to_idx, vocab_to_idx_, test_vocabs, topk=10):
     """
@@ -70,7 +91,8 @@ def compare(wv, wv_, vocab_to_idx, vocab_to_idx_, test_vocabs, topk=10):
     X = wv[indices]
     X_ = wv_[indices_]
 
-    similars = _most_similar(query_idxs, X)
-    similars_ = _most_similar(query_idxs, X_)
+    #similars = _most_similar(query_idxs, X)
+    #similars_ = _most_similar(query_idxs, X_)
 
-    return similars, similars_, idx_to_vocab
+    #return similars, similars_, idx_to_vocab
+    raise NotImplemented
