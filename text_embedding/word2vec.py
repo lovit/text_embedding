@@ -159,6 +159,26 @@ class Word2Vec:
         query_vector = self.wv[query_idx,:].reshape(1,-1)
         return self.similar_words_from_vector(query_vector, topk, query_idx)
 
+    def get_vector(self, word):
+        """
+        :param word: str
+            Query word
+
+        It returns
+        ----------
+         word vector : numpy array
+        """
+
+        query_idx = self._vocab_to_idx_.get(word, -1)
+
+        if query_idx < 0:
+            return None
+
+        return self.wv[query_idx,:].reshape(1,-1)
+    
+    def __getitem__(self, word):
+        return self.get_vector(word)
+
     def similar_words_from_vector(self, vector, topk=10, query_idx=-1):
         """
         :param vector: numpy.ndarray
