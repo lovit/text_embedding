@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.sparse import diags
 from sklearn.metrics import pairwise_distances
 from sklearn.utils.extmath import safe_sparse_dot
 from .math import train_pmi
@@ -48,7 +49,7 @@ class Word2Vec:
 
     def __init__(self, sentences=None, size=100, window=3, min_count=10,
         negative=10, alpha=0.0, beta=0.75, dynamic_weight=False,
-        verbose=True, n_iter=5, min_cooccurrence=5, prune_point=500000):
+        verbose=True, n_iter=5, min_cooccurrence=5, prune_point=500000, max_count=100):
 
         assert 0 < beta
 
@@ -73,6 +74,7 @@ class Word2Vec:
         self._idx_to_count = None
         self._py = None
         self._transformer = None
+        self._max_count = max_count
         self.n_vocabs = 0
 
         if sentences:
@@ -103,6 +105,15 @@ class Word2Vec:
         pmi_ww, _, self._py = train_pmi(WW, beta = self._beta,
             py = py, min_pmi = np.log(max(1, self._negative)))
 
+        dw = np.asarray([min(c, self._max_count) / self._max_count for c in self._idx_to_count])
+        dw = diags(dw)
+        print('before sum of pmi_ww = {}'.format(pmi_ww.sum()))
+        print('before sum of last 100 row')
+        print(pmi_ww.sum(axis=1)[-10:])
+        pmi_ww = dw.dot(pmi_ww)
+        print('after sum of pmi_ww = {}'.format(pmi_ww.sum()))
+        print('after sum of last 100 row')
+        print(pmi_ww.sum(axis=1)[-10:])
         if self._verbose:
             print('train SVD ... ', end='')
 
